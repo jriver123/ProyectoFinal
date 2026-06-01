@@ -1,5 +1,6 @@
 package com.example.proyectofinal
 
+import androidx.compose.foundation.layout.*
 import android.content.Context
 import android.content.Intent
 import android.graphics.ImageDecoder
@@ -28,6 +29,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -38,8 +40,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -76,11 +78,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContent {
             BattleIoTheme {
                 Surface(
@@ -128,28 +130,40 @@ data class MatchHistory(
     val score: String
 )
 
+data class AttackMove(
+    val name: String,
+    val damage: Int,
+    val description: String
+)
+
+data class BattleCharacter(
+    val id: Int,
+    val name: String,
+    val role: String,
+    val maxHp: Int,
+    val attackBonus: Int,
+    val description: String,
+    val attacks: List<AttackMove>
+)
+
+data class StoryChapter(
+    val id: Int,
+    val title: String,
+    val description: String,
+    val enemy: BattleCharacter,
+    val rewardCoins: Int,
+    val rewardXp: Int
+)
+
 @Composable
 fun BattleIoApp() {
     val context = LocalContext.current
-
-    val prefs = remember {
-        context.getSharedPreferences("battle_io_data", Context.MODE_PRIVATE)
-    }
-
+    val prefs = remember { context.getSharedPreferences("battle_io_data", Context.MODE_PRIVATE) }
     val savedPackId = prefs.getInt("selectedPackId", -1)
 
-    var selectedNav by rememberSaveable {
-        mutableStateOf(prefs.getString("selectedNav", "inicio") ?: "inicio")
-    }
-
-    var nombre by rememberSaveable {
-        mutableStateOf(prefs.getString("nombre", "Jonathan Rivera") ?: "Jonathan Rivera")
-    }
-
-    var correo by rememberSaveable {
-        mutableStateOf(prefs.getString("correo", "jonathan@uam.edu.ni") ?: "jonathan@uam.edu.ni")
-    }
-
+    var selectedNav by rememberSaveable { mutableStateOf(prefs.getString("selectedNav", "inicio") ?: "inicio") }
+    var nombre by rememberSaveable { mutableStateOf(prefs.getString("nombre", "Jonathan Rivera") ?: "Jonathan Rivera") }
+    var correo by rememberSaveable { mutableStateOf(prefs.getString("correo", "jonathan@uam.edu.ni") ?: "jonathan@uam.edu.ni") }
     var bio by rememberSaveable {
         mutableStateOf(
             prefs.getString(
@@ -158,46 +172,23 @@ fun BattleIoApp() {
             ) ?: "Jugador competitivo con interés en mejorar su rendimiento."
         )
     }
+    var profileImageUri by rememberSaveable { mutableStateOf(prefs.getString("profileImageUri", null)) }
+    var nivel by rememberSaveable { mutableIntStateOf(prefs.getInt("nivel", 8)) }
+    var monedas by rememberSaveable { mutableIntStateOf(prefs.getInt("monedas", 1250)) }
+    var partidasGanadas by rememberSaveable { mutableIntStateOf(prefs.getInt("partidasGanadas", 12)) }
+    var partidasJugadas by rememberSaveable { mutableIntStateOf(prefs.getInt("partidasJugadas", 20)) }
+    var selectedPackId by rememberSaveable { mutableStateOf(if (savedPackId == -1) null else savedPackId) }
+    var graphicsQuality by rememberSaveable { mutableStateOf(normalizeQuality(prefs.getString("graphicsQuality", "high"))) }
+    var selectedLanguage by rememberSaveable { mutableStateOf(normalizeLanguage(prefs.getString("selectedLanguage", "es"))) }
+    var musicVolume by rememberSaveable { mutableFloatStateOf(prefs.getFloat("musicVolume", 75f)) }
+    var soundVolume by rememberSaveable { mutableFloatStateOf(prefs.getFloat("soundVolume", 80f)) }
 
-    var profileImageUri by rememberSaveable {
-        mutableStateOf(prefs.getString("profileImageUri", null))
-    }
-
-    var nivel by rememberSaveable {
-        mutableIntStateOf(prefs.getInt("nivel", 8))
-    }
-
-    var monedas by rememberSaveable {
-        mutableIntStateOf(prefs.getInt("monedas", 1250))
-    }
-
-    var partidasGanadas by rememberSaveable {
-        mutableIntStateOf(prefs.getInt("partidasGanadas", 12))
-    }
-
-    var partidasJugadas by rememberSaveable {
-        mutableIntStateOf(prefs.getInt("partidasJugadas", 20))
-    }
-
-    var selectedPackId by rememberSaveable {
-        mutableStateOf<Int?>(if (savedPackId == -1) null else savedPackId)
-    }
-
-    var graphicsQuality by rememberSaveable {
-        mutableStateOf(normalizeQuality(prefs.getString("graphicsQuality", "high")))
-    }
-
-    var selectedLanguage by rememberSaveable {
-        mutableStateOf(normalizeLanguage(prefs.getString("selectedLanguage", "es")))
-    }
-
-    var musicVolume by rememberSaveable {
-        mutableFloatStateOf(prefs.getFloat("musicVolume", 75f))
-    }
-
-    var soundVolume by rememberSaveable {
-        mutableFloatStateOf(prefs.getFloat("soundVolume", 80f))
-    }
+    var selectedCharacterId by rememberSaveable { mutableIntStateOf(prefs.getInt("selectedCharacterId", 1)) }
+    var storyProgress by rememberSaveable { mutableIntStateOf(prefs.getInt("storyProgress", 1).coerceIn(1, 3)) }
+    var playerHp by rememberSaveable { mutableIntStateOf(100) }
+    var enemyHp by rememberSaveable { mutableIntStateOf(100) }
+    var battleMessage by rememberSaveable { mutableStateOf("El combate está por comenzar.") }
+    var battleFinished by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(
         selectedNav,
@@ -213,7 +204,9 @@ fun BattleIoApp() {
         graphicsQuality,
         selectedLanguage,
         musicVolume,
-        soundVolume
+        soundVolume,
+        selectedCharacterId,
+        storyProgress
     ) {
         prefs.edit()
             .putString("selectedNav", selectedNav)
@@ -230,6 +223,8 @@ fun BattleIoApp() {
             .putString("selectedLanguage", selectedLanguage)
             .putFloat("musicVolume", musicVolume)
             .putFloat("soundVolume", soundVolume)
+            .putInt("selectedCharacterId", selectedCharacterId)
+            .putInt("storyProgress", storyProgress)
             .apply()
     }
 
@@ -264,28 +259,24 @@ fun BattleIoApp() {
                     icon = { Text("🏠") },
                     label = { Text(t(selectedLanguage, "nav_home")) }
                 )
-
                 NavigationBarItem(
-                    selected = selectedNav == "partidas",
+                    selected = selectedNav == "partidas" || selectedNav == "historia" || selectedNav == "seleccion_personaje" || selectedNav == "combate",
                     onClick = { selectedNav = "partidas" },
-                    icon = { Text("🎮") },
+                    icon = { Text("⚔️") },
                     label = { Text(t(selectedLanguage, "nav_matches")) }
                 )
-
                 NavigationBarItem(
                     selected = selectedNav == "tienda",
                     onClick = { selectedNav = "tienda" },
                     icon = { Text("🛒") },
                     label = { Text(t(selectedLanguage, "nav_store")) }
                 )
-
                 NavigationBarItem(
                     selected = selectedNav == "perfil",
                     onClick = { selectedNav = "perfil" },
                     icon = { Text("👤") },
                     label = { Text(t(selectedLanguage, "nav_profile")) }
                 )
-
                 NavigationBarItem(
                     selected = selectedNav == "config",
                     onClick = { selectedNav = "config" },
@@ -318,8 +309,10 @@ fun BattleIoApp() {
                     monedas = monedas,
                     partidasGanadas = partidasGanadas,
                     partidasJugadas = partidasJugadas,
+                    storyProgress = storyProgress,
                     onGoToStore = { selectedNav = "tienda" },
-                    onGoToProfile = { selectedNav = "perfil" }
+                    onGoToProfile = { selectedNav = "perfil" },
+                    onGoToStory = { selectedNav = "historia" }
                 )
 
                 "partidas" -> MatchesScreen(
@@ -327,17 +320,100 @@ fun BattleIoApp() {
                     matches = matches,
                     partidasGanadas = partidasGanadas,
                     partidasJugadas = partidasJugadas,
+                    storyProgress = storyProgress,
                     onPlayMatch = {
                         partidasJugadas++
                         partidasGanadas++
                         nivel++
                         monedas += 150
-
                         scope.launch {
                             snackbarHostState.showSnackbar(t(selectedLanguage, "snackbar_match_won"))
                         }
+                    },
+                    onGoToStory = { selectedNav = "historia" }
+                )
+
+                "historia" -> StoryScreen(
+                    storyProgress = storyProgress,
+                    onStart = { selectedNav = "seleccion_personaje" },
+                    onBack = { selectedNav = "partidas" },
+                    onResetStory = {
+                        storyProgress = 1
+                        scope.launch { snackbarHostState.showSnackbar("Historia reiniciada") }
                     }
                 )
+
+                "seleccion_personaje" -> CharacterSelectionScreen(
+                    characters = getPlayableCharacters(),
+                    selectedCharacterId = selectedCharacterId,
+                    onSelectCharacter = { selectedCharacterId = it },
+                    onStartBattle = {
+                        val player = getPlayableCharacters().first { it.id == selectedCharacterId }
+                        val chapter = getStoryChapters().first { it.id == storyProgress }
+                        playerHp = player.maxHp
+                        enemyHp = chapter.enemy.maxHp
+                        battleMessage = "${chapter.enemy.name} apareció en la arena. Es tu turno."
+                        battleFinished = false
+                        selectedNav = "combate"
+                    },
+                    onBack = { selectedNav = "historia" }
+                )
+
+                "combate" -> {
+                    val player = getPlayableCharacters().first { it.id == selectedCharacterId }
+                    val chapter = getStoryChapters().first { it.id == storyProgress }
+                    val enemy = chapter.enemy
+
+                    BattleScreen(
+                        player = player,
+                        enemy = enemy,
+                        chapter = chapter,
+                        playerHp = playerHp,
+                        enemyHp = enemyHp,
+                        battleMessage = battleMessage,
+                        battleFinished = battleFinished,
+                        onAttack = { attack ->
+                            if (!battleFinished) {
+                                val playerDamage = attack.damage + player.attackBonus + (nivel / 3)
+                                val updatedEnemyHp = (enemyHp - playerDamage).coerceAtLeast(0)
+                                enemyHp = updatedEnemyHp
+
+                                if (updatedEnemyHp == 0) {
+                                    battleMessage = "¡Victoria! ${player.name} usó ${attack.name} y derrotó a ${enemy.name}. Recuperaste un fragmento del núcleo."
+                                    battleFinished = true
+                                    partidasJugadas++
+                                    partidasGanadas++
+                                    nivel++
+                                    monedas += chapter.rewardCoins
+                                    storyProgress = (storyProgress + 1).coerceAtMost(3)
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("Ganaste ${chapter.rewardCoins} monedas y ${chapter.rewardXp} XP")
+                                    }
+                                } else {
+                                    val enemyAttack = enemy.attacks.random()
+                                    val enemyDamage = enemyAttack.damage + enemy.attackBonus
+                                    val updatedPlayerHp = (playerHp - enemyDamage).coerceAtLeast(0)
+                                    playerHp = updatedPlayerHp
+
+                                    battleMessage = "${player.name} usó ${attack.name} e hizo $playerDamage de daño. ${enemy.name} respondió con ${enemyAttack.name} e hizo $enemyDamage de daño."
+
+                                    if (updatedPlayerHp == 0) {
+                                        battleMessage = "Derrota. ${enemy.name} resistió el ataque y corrompió temporalmente el núcleo. Puedes volver a intentarlo."
+                                        battleFinished = true
+                                        partidasJugadas++
+                                    }
+                                }
+                            }
+                        },
+                        onExit = { selectedNav = "partidas" },
+                        onRetry = {
+                            playerHp = player.maxHp
+                            enemyHp = enemy.maxHp
+                            battleMessage = "Nuevo intento contra ${enemy.name}. Es tu turno."
+                            battleFinished = false
+                        }
+                    )
+                }
 
                 "tienda" -> StoreScreen(
                     language = selectedLanguage,
@@ -347,18 +423,13 @@ fun BattleIoApp() {
                     onSelectPack = { selectedPackId = it },
                     onPurchase = {
                         val selectedPack = packs.firstOrNull { it.id == selectedPackId }
-
                         scope.launch {
                             if (selectedPack == null) {
                                 snackbarHostState.showSnackbar(t(selectedLanguage, "snackbar_select_pack"))
                             } else {
                                 monedas += selectedPack.coins
                                 snackbarHostState.showSnackbar(
-                                    "${t(selectedLanguage, "snackbar_purchase")}: ${
-                                        t(selectedLanguage, selectedPack.nameKey)
-                                    }. ${t(selectedLanguage, "snackbar_added")} ${selectedPack.coins} ${
-                                        t(selectedLanguage, "coins_lower")
-                                    }."
+                                    "${t(selectedLanguage, "snackbar_purchase")}: ${t(selectedLanguage, selectedPack.nameKey)}"
                                 )
                             }
                         }
@@ -371,21 +442,13 @@ fun BattleIoApp() {
                     correo = correo,
                     bio = bio,
                     profileImageUri = profileImageUri,
-                    nivel = nivel,
-                    monedas = monedas,
-                    partidasGanadas = partidasGanadas,
-                    partidasJugadas = partidasJugadas,
                     onNombreChange = { nombre = it },
                     onCorreoChange = { correo = it },
                     onBioChange = { bio = it },
-                    onProfileImageUriChange = { profileImageUri = it },
+                    onProfileImageChange = { profileImageUri = it },
                     onSave = {
                         scope.launch {
-                            if (nombre.isBlank() || correo.isBlank() || bio.isBlank()) {
-                                snackbarHostState.showSnackbar(t(selectedLanguage, "snackbar_complete_profile"))
-                            } else {
-                                snackbarHostState.showSnackbar(t(selectedLanguage, "snackbar_profile_saved"))
-                            }
+                            snackbarHostState.showSnackbar(t(selectedLanguage, "snackbar_profile_saved"))
                         }
                     },
                     onLogout = {
@@ -420,35 +483,12 @@ fun HomeScreen(
     monedas: Int,
     partidasGanadas: Int,
     partidasJugadas: Int,
+    storyProgress: Int,
     onGoToStore: () -> Unit,
-    onGoToProfile: () -> Unit
+    onGoToProfile: () -> Unit,
+    onGoToStory: () -> Unit
 ) {
-    val context = LocalContext.current
-
-    var homeImageBitmap by remember {
-        mutableStateOf<ImageBitmap?>(null)
-    }
-
-    LaunchedEffect(profileImageUri) {
-        homeImageBitmap = if (profileImageUri != null) {
-            try {
-                val uri = Uri.parse(profileImageUri)
-
-                val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    val source = ImageDecoder.createSource(context.contentResolver, uri)
-                    ImageDecoder.decodeBitmap(source)
-                } else {
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-                }
-
-                bitmap.asImageBitmap()
-            } catch (_: Exception) {
-                null
-            }
-        } else {
-            null
-        }
-    }
+    val imageBitmap = rememberImageBitmap(profileImageUri)
 
     LazyColumn(
         modifier = Modifier
@@ -458,12 +498,16 @@ fun HomeScreen(
     ) {
         item {
             Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = "Battle.io",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF3A0CA3)
+            )
+            Text(
+                text = "Fragmentos del Núcleo",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color(0xFF5F5F7A)
             )
         }
 
@@ -476,7 +520,8 @@ fun HomeScreen(
             ) {
                 Column(
                     modifier = Modifier.padding(22.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Box(
                         modifier = Modifier
@@ -484,17 +529,14 @@ fun HomeScreen(
                             .clip(CircleShape)
                             .background(
                                 Brush.linearGradient(
-                                    listOf(
-                                        Color(0xFF6C63FF),
-                                        Color(0xFFFFB3C6)
-                                    )
+                                    listOf(Color(0xFF6C63FF), Color(0xFFFFB3C6))
                                 )
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (homeImageBitmap != null) {
+                        if (imageBitmap != null) {
                             Image(
-                                bitmap = homeImageBitmap!!,
+                                bitmap = imageBitmap,
                                 contentDescription = t(language, "profile_photo"),
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -502,28 +544,18 @@ fun HomeScreen(
                                 contentScale = ContentScale.Crop
                             )
                         } else {
-                            Text(
-                                text = obtenerIniciales(nombre),
-                                color = Color.White,
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("🎮", style = MaterialTheme.typography.headlineLarge)
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
-
                     Text(
-                        text = "${t(language, "welcome")}, $nombre",
+                        text = nombre,
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
+                        fontWeight = FontWeight.Bold
                     )
-
                     Text(
-                        text = "${t(language, "level")} $nivel • $monedas ${t(language, "coins_lower")}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF6D6875)
+                        text = "Nivel $nivel • $monedas monedas",
+                        color = Color(0xFF5F5F7A)
                     )
                 }
             }
@@ -535,19 +567,22 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StatCard(
-                    title = t(language, "won"),
+                    title = t(language, "victories"),
                     value = partidasGanadas.toString(),
-                    subtitle = t(language, "matches"),
+                    subtitle = t(language, "won_sub"),
                     modifier = Modifier.weight(1f)
                 )
-
                 StatCard(
-                    title = t(language, "played"),
+                    title = t(language, "total"),
                     value = partidasJugadas.toString(),
-                    subtitle = t(language, "total"),
+                    subtitle = t(language, "played_sub"),
                     modifier = Modifier.weight(1f)
                 )
             }
+        }
+
+        item {
+            StoryProgressCard(storyProgress = storyProgress, onGoToStory = onGoToStory)
         }
 
         item {
@@ -567,15 +602,20 @@ fun HomeScreen(
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF3A0CA3)
                     )
-
                     Button(
+                        onClick = onGoToStory,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text("Jugar modo historia")
+                    }
+                    OutlinedButton(
                         onClick = onGoToStore,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Text(t(language, "go_store"))
                     }
-
                     OutlinedButton(
                         onClick = onGoToProfile,
                         modifier = Modifier.fillMaxWidth(),
@@ -595,7 +635,9 @@ fun MatchesScreen(
     matches: List<MatchHistory>,
     partidasGanadas: Int,
     partidasJugadas: Int,
-    onPlayMatch: () -> Unit
+    storyProgress: Int,
+    onPlayMatch: () -> Unit,
+    onGoToStory: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -610,7 +652,6 @@ fun MatchesScreen(
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF3A0CA3)
             )
-
             Text(
                 text = t(language, "matches_description"),
                 style = MaterialTheme.typography.bodyMedium,
@@ -629,7 +670,6 @@ fun MatchesScreen(
                     subtitle = t(language, "won_sub"),
                     modifier = Modifier.weight(1f)
                 )
-
                 StatCard(
                     title = t(language, "total"),
                     value = partidasJugadas.toString(),
@@ -640,10 +680,43 @@ fun MatchesScreen(
         }
 
         item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Modo Historia",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF3A0CA3)
+                    )
+                    Text(
+                        text = "Capítulo actual: $storyProgress de 3. Entra a la arena, elige tu personaje y pelea por turnos contra los Glitches.",
+                        color = Color(0xFF5F5F7A)
+                    )
+                    Button(
+                        onClick = onGoToStory,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp)
+                    ) {
+                        Text("Entrar al modo historia")
+                    }
+                }
+            }
+        }
+
+        item {
             Button(
                 onClick = onPlayMatch,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp)
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00A896))
             ) {
                 Text(t(language, "play_simulated"))
             }
@@ -666,23 +739,321 @@ fun MatchesScreen(
                     Column {
                         Text(
                             text = t(language, match.titleKey),
-                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-
                         Text(
                             text = t(language, match.resultKey),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (match.resultKey == "result_win") Color(0xFF00875A) else Color(0xFFD00000)
+                            color = Color(0xFF5F5F7A)
                         )
                     }
-
                     Text(
                         text = match.score,
-                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF6C63FF)
+                        color = Color(0xFF00A896)
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun StoryScreen(
+    storyProgress: Int,
+    onStart: () -> Unit,
+    onBack: () -> Unit,
+    onResetStory: () -> Unit
+) {
+    val chapters = getStoryChapters()
+    val chapter = chapters.firstOrNull { it.id == storyProgress } ?: chapters.last()
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Text(
+                text = "Modo Historia",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF3A0CA3)
+            )
+            Text(
+                text = "Battle.io: Fragmentos del Núcleo",
+                color = Color(0xFF5F5F7A)
+            )
+        }
+
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 5.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = chapter.title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF3A0CA3)
+                    )
+                    Text(
+                        text = chapter.description,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color(0xFF34344A)
+                    )
+                    Text(
+                        text = "Enemigo: ${chapter.enemy.name}",
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Recompensa: ${chapter.rewardCoins} monedas • ${chapter.rewardXp} XP",
+                        color = Color(0xFF00A896),
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F0FF))
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Sinopsis general",
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF3A0CA3)
+                    )
+                    Text(
+                        text = "En el mundo digital de Battle.io, una falla del sistema creó enemigos llamados Glitches. Tu misión es entrar a la arena, elegir un campeón y recuperar los fragmentos del núcleo mediante combates por turnos.",
+                        color = Color(0xFF34344A)
+                    )
+                }
+            }
+        }
+
+        item {
+            Button(
+                onClick = onStart,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp)
+            ) {
+                Text("Elegir personaje")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onBack,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp)
+            ) {
+                Text("Volver a partidas")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onResetStory,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp)
+            ) {
+                Text("Reiniciar historia")
+            }
+        }
+    }
+}
+
+@Composable
+fun CharacterSelectionScreen(
+    characters: List<BattleCharacter>,
+    selectedCharacterId: Int,
+    onSelectCharacter: (Int) -> Unit,
+    onStartBattle: () -> Unit,
+    onBack: () -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Text(
+                text = "Elige tu personaje",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF3A0CA3)
+            )
+            Text(
+                text = "Cada personaje tiene vida, bonus de ataque y habilidades diferentes.",
+                color = Color(0xFF5F5F7A)
+            )
+        }
+
+        items(characters) { character ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSelectCharacter(character.id) },
+                shape = RoundedCornerShape(24.dp),
+                border = if (selectedCharacterId == character.id) {
+                    BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                } else {
+                    null
+                },
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = character.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF3A0CA3)
+                    )
+                    Text(
+                        text = character.role,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF00A896)
+                    )
+                    Text(text = character.description)
+                    Text(
+                        text = "Vida: ${character.maxHp} | Bonus ataque: +${character.attackBonus}",
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Ataques: ${character.attacks.joinToString { it.name }}",
+                        color = Color(0xFF5F5F7A)
+                    )
+                }
+            }
+        }
+
+        item {
+            Button(
+                onClick = onStartBattle,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp)
+            ) {
+                Text("Iniciar combate")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onBack,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp)
+            ) {
+                Text("Volver a historia")
+            }
+        }
+    }
+}
+
+@Composable
+fun BattleScreen(
+    player: BattleCharacter,
+    enemy: BattleCharacter,
+    chapter: StoryChapter,
+    playerHp: Int,
+    enemyHp: Int,
+    battleMessage: String,
+    battleFinished: Boolean,
+    onAttack: (AttackMove) -> Unit,
+    onExit: () -> Unit,
+    onRetry: () -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Text(
+                text = "Combate por turnos",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF3A0CA3)
+            )
+            Text(
+                text = chapter.title,
+                color = Color(0xFF5F5F7A)
+            )
+        }
+
+        item {
+            FighterCard(
+                title = "Tu personaje",
+                character = player,
+                currentHp = playerHp,
+                barColor = Color(0xFF00A896)
+            )
+        }
+
+        item {
+            FighterCard(
+                title = "Enemigo",
+                character = enemy,
+                currentHp = enemyHp,
+                barColor = Color(0xFFE63946)
+            )
+        }
+
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+            ) {
+                Text(
+                    text = battleMessage,
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
+
+        if (!battleFinished) {
+            item {
+                Text(
+                    text = "Elige un ataque:",
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF3A0CA3)
+                )
+            }
+
+            items(player.attacks) { attack ->
+                AttackButton(attack = attack, onAttack = { onAttack(attack) })
+            }
+        } else {
+            item {
+                Button(
+                    onClick = onRetry,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp)
+                ) {
+                    Text("Intentar otra vez")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = onExit,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp)
+                ) {
+                    Text("Volver a partidas")
                 }
             }
         }
@@ -698,8 +1069,6 @@ fun StoreScreen(
     onSelectPack: (Int) -> Unit,
     onPurchase: () -> Unit
 ) {
-    val selectedPack = packs.firstOrNull { it.id == selectedPackId }
-
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -713,57 +1082,51 @@ fun StoreScreen(
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF3A0CA3)
             )
-
             Text(
-                text = t(language, "store_description"),
-                style = MaterialTheme.typography.bodyMedium,
+                text = "Balance actual: $monedas monedas",
                 color = Color(0xFF5F5F7A)
             )
         }
 
-        item {
+        items(packs) { pack ->
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F0FF))
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSelectPack(pack.id) },
+                shape = RoundedCornerShape(24.dp),
+                border = if (selectedPackId == pack.id) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Column(modifier = Modifier.padding(18.dp)) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text(
-                        text = t(language, "current_balance"),
-                        style = MaterialTheme.typography.titleMedium,
+                        text = t(language, pack.nameKey),
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF3A0CA3)
                     )
-
-                    Text(
-                        text = "$monedas ${t(language, "available_coins")}",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Text(text = t(language, pack.bonusKey), color = Color(0xFF5F5F7A))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("${pack.coins} monedas", fontWeight = FontWeight.Bold)
+                        Text("US$ ${pack.priceUsd}", fontWeight = FontWeight.Bold, color = Color(0xFF00A896))
+                    }
                 }
             }
         }
 
-        items(packs) { pack ->
-            PackCard(
-                language = language,
-                pack = pack,
-                isSelected = selectedPackId == pack.id,
-                onSelect = { onSelectPack(pack.id) }
-            )
-        }
-
-        item {
-            PurchaseSummary(language = language, selectedPack = selectedPack)
-        }
-
         item {
             Button(
-                modifier = Modifier.fillMaxWidth(),
                 onClick = onPurchase,
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp)
             ) {
-                Text(t(language, "buy_now"))
+                Text(t(language, "buy_pack"))
             }
         }
     }
@@ -776,26 +1139,16 @@ fun ProfileScreen(
     correo: String,
     bio: String,
     profileImageUri: String?,
-    nivel: Int,
-    monedas: Int,
-    partidasGanadas: Int,
-    partidasJugadas: Int,
     onNombreChange: (String) -> Unit,
     onCorreoChange: (String) -> Unit,
     onBioChange: (String) -> Unit,
-    onProfileImageUriChange: (String?) -> Unit,
+    onProfileImageChange: (String?) -> Unit,
     onSave: () -> Unit,
     onLogout: () -> Unit
 ) {
     val context = LocalContext.current
-
-    var profileImageBitmap by remember {
-        mutableStateOf<ImageBitmap?>(null)
-    }
-
-    val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
+    val imageBitmap = rememberImageBitmap(profileImageUri)
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
             try {
                 context.contentResolver.takePersistableUriPermission(
@@ -804,29 +1157,7 @@ fun ProfileScreen(
                 )
             } catch (_: Exception) {
             }
-
-            onProfileImageUriChange(uri.toString())
-        }
-    }
-
-    LaunchedEffect(profileImageUri) {
-        profileImageBitmap = if (profileImageUri != null) {
-            try {
-                val uri = Uri.parse(profileImageUri)
-
-                val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    val source = ImageDecoder.createSource(context.contentResolver, uri)
-                    ImageDecoder.decodeBitmap(source)
-                } else {
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-                }
-
-                bitmap.asImageBitmap()
-            } catch (_: Exception) {
-                null
-            }
-        } else {
-            null
+            onProfileImageChange(uri.toString())
         }
     }
 
@@ -834,7 +1165,8 @@ fun ProfileScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(18.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {
             Text(
@@ -843,105 +1175,41 @@ fun ProfileScreen(
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF3A0CA3)
             )
-
-            Text(
-                text = t(language, "profile_description"),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF5F5F7A)
-            )
         }
 
         item {
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.elevatedCardColors(containerColor = Color.White),
-                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp)
+            Box(
+                modifier = Modifier
+                    .size(110.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(Color(0xFF6C63FF), Color(0xFFFFB3C6))
+                        )
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Column(
-                    modifier = Modifier.padding(22.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(
+                if (imageBitmap != null) {
+                    Image(
+                        bitmap = imageBitmap,
+                        contentDescription = t(language, "profile_photo"),
                         modifier = Modifier
-                            .size(92.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(
-                                        Color(0xFF6C63FF),
-                                        Color(0xFF00A896)
-                                    )
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (profileImageBitmap != null) {
-                            Image(
-                                bitmap = profileImageBitmap!!,
-                                contentDescription = t(language, "profile_photo"),
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Text(
-                                text = obtenerIniciales(nombre),
-                                color = Color.White,
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    OutlinedButton(
-                        onClick = {
-                            imagePickerLauncher.launch(arrayOf("image/*"))
-                        },
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text(t(language, "choose_profile_photo"))
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        text = if (nombre.isBlank()) t(language, "player_without_name") else nombre,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
                     )
-
-                    Text(
-                        text = correo.ifBlank { t(language, "email_not_registered") },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF6D6875)
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        StatCard(
-                            title = t(language, "level"),
-                            value = nivel.toString(),
-                            subtitle = t(language, "current"),
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        StatCard(
-                            title = t(language, "coins"),
-                            value = monedas.toString(),
-                            subtitle = t(language, "balance"),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                } else {
+                    Text("👤", style = MaterialTheme.typography.headlineLarge)
                 }
+            }
+        }
+
+        item {
+            OutlinedButton(
+                onClick = { launcher.launch(arrayOf("image/*")) },
+                shape = RoundedCornerShape(18.dp)
+            ) {
+                Text(t(language, "change_photo"))
             }
         }
 
@@ -949,89 +1217,48 @@ fun ProfileScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column(
                     modifier = Modifier.padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        text = t(language, "edit_info"),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF3A0CA3)
-                    )
-
                     OutlinedTextField(
                         value = nombre,
                         onValueChange = onNombreChange,
                         label = { Text(t(language, "name")) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
                     )
-
                     OutlinedTextField(
                         value = correo,
                         onValueChange = onCorreoChange,
                         label = { Text(t(language, "email")) },
-                        singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
                     )
-
                     OutlinedTextField(
                         value = bio,
                         onValueChange = onBioChange,
                         label = { Text(t(language, "bio")) },
-                        minLines = 3,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3
                     )
-
                     Button(
                         onClick = onSave,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(18.dp)
                     ) {
-                        Text(t(language, "save_profile"))
+                        Text(t(language, "save_changes"))
                     }
-
                     OutlinedButton(
                         onClick = onLogout,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFFD00000)
-                        )
+                        shape = RoundedCornerShape(18.dp)
                     ) {
                         Text(t(language, "logout"))
                     }
-                }
-            }
-        }
-
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F0FF))
-            ) {
-                Column(
-                    modifier = Modifier.padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = t(language, "player_summary"),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF3A0CA3)
-                    )
-
-                    Divider(color = Color(0xFFD8D3FF))
-
-                    Text("${t(language, "matches_played")}: $partidasJugadas")
-                    Text("${t(language, "matches_won")}: $partidasGanadas")
-                    Text("${t(language, "performance")}: ${calcularRendimiento(partidasGanadas, partidasJugadas)}%")
                 }
             }
         }
@@ -1054,7 +1281,7 @@ fun SettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(18.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
             Text(
@@ -1063,62 +1290,51 @@ fun SettingsScreen(
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF3A0CA3)
             )
-
-            Text(
-                text = t(language, "settings_description"),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF5F5F7A)
-            )
         }
 
         item {
-            SettingCard(
-                title = t(language, "graphics"),
-                subtitle = "${t(language, "current_quality")}: ${qualityLabel(language, graphicsQuality)}"
-            ) {
-                OptionsBar(
-                    options = listOf("low", "medium", "high", "ultra"),
-                    selectedOption = graphicsQuality,
-                    optionLabel = { qualityLabel(language, it) },
-                    onOptionSelected = onGraphicsQualityChange
+            SettingsCard(title = t(language, "language")) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OptionChip("Español", selectedLanguage == "es") { onLanguageChange("es") }
+                    OptionChip("English", selectedLanguage == "en") { onLanguageChange("en") }
+                }
+            }
+        }
+
+        item {
+            SettingsCard(title = t(language, "graphics_quality")) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OptionChip(t(language, "quality_low"), graphicsQuality == "low") { onGraphicsQualityChange("low") }
+                    OptionChip(t(language, "quality_medium"), graphicsQuality == "medium") { onGraphicsQualityChange("medium") }
+                    OptionChip(t(language, "quality_high"), graphicsQuality == "high") { onGraphicsQualityChange("high") }
+                }
+            }
+        }
+
+        item {
+            SettingsCard(title = t(language, "music_volume")) {
+                Text("${musicVolume.roundToInt()}%", fontWeight = FontWeight.Bold)
+                Slider(
+                    value = musicVolume,
+                    onValueChange = onMusicVolumeChange,
+                    valueRange = 0f..100f
                 )
             }
         }
 
         item {
-            SettingCard(
-                title = t(language, "language"),
-                subtitle = "${t(language, "current_language")}: ${languageLabel(language, selectedLanguage)}"
-            ) {
-                OptionsBar(
-                    options = listOf("es", "en", "fr"),
-                    selectedOption = selectedLanguage,
-                    optionLabel = { languageLabel(language, it) },
-                    onOptionSelected = onLanguageChange
-                )
-            }
-        }
-
-        item {
-            SettingCard(
-                title = t(language, "music"),
-                subtitle = "${t(language, "current_volume")}: ${musicVolume.toInt()}%"
-            ) {
-                VolumeControl(
-                    volume = musicVolume,
-                    onVolumeChange = onMusicVolumeChange
-                )
-            }
-        }
-
-        item {
-            SettingCard(
-                title = t(language, "sound_effects"),
-                subtitle = "${t(language, "current_volume")}: ${soundVolume.toInt()}%"
-            ) {
-                VolumeControl(
-                    volume = soundVolume,
-                    onVolumeChange = onSoundVolumeChange
+            SettingsCard(title = t(language, "sound_volume")) {
+                Text("${soundVolume.roundToInt()}%", fontWeight = FontWeight.Bold)
+                Slider(
+                    value = soundVolume,
+                    onValueChange = onSoundVolumeChange,
+                    valueRange = 0f..100f
                 )
             }
         }
@@ -1126,161 +1342,139 @@ fun SettingsScreen(
 }
 
 @Composable
-fun StatCard(
-    title: String,
-    value: String,
-    subtitle: String,
-    modifier: Modifier = Modifier
-) {
+fun StatCard(title: String, value: String, subtitle: String, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            Text(text = title, color = Color(0xFF5F5F7A))
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF6C63FF)
+                color = Color(0xFF3A0CA3)
             )
-
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF6D6875)
-            )
+            Text(text = subtitle, color = Color(0xFF5F5F7A))
         }
     }
 }
 
 @Composable
-fun PackCard(
-    language: String,
-    pack: GamePack,
-    isSelected: Boolean,
-    onSelect: () -> Unit
-) {
-    val border = if (isSelected) {
-        BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-    } else {
-        null
+fun StoryProgressCard(storyProgress: Int, onGoToStory: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF3A0CA3)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 5.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "Historia principal",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                text = "Capítulo $storyProgress de 3: recupera los fragmentos del núcleo venciendo enemigos por turnos.",
+                color = Color.White.copy(alpha = 0.9f)
+            )
+            LinearProgressIndicator(
+                progress = storyProgress / 3f,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(50.dp)),
+                color = Color(0xFFFFB703),
+                trackColor = Color.White.copy(alpha = 0.25f)
+            )
+            Button(
+                onClick = onGoToStory,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color(0xFF3A0CA3))
+            ) {
+                Text("Continuar historia")
+            }
+        }
     }
+}
+
+@Composable
+fun FighterCard(title: String, character: BattleCharacter, currentHp: Int, barColor: Color) {
+    val hpPercent = if (character.maxHp == 0) 0f else currentHp.toFloat() / character.maxHp.toFloat()
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onSelect() },
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        border = border,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) Color(0xFFF1F0FF) else Color.White
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier.padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = t(language, pack.nameKey),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text(
-                    text = "$${pack.priceUsd}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF6C63FF),
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
+            Text(text = title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Text(
-                text = "${t(language, "coins")}: ${pack.coins}",
-                style = MaterialTheme.typography.bodyMedium
+                text = character.name,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
             )
-
+            Text(text = character.role, color = Color(0xFF5F5F7A))
             Text(
-                text = "${t(language, "bonus")}: ${t(language, pack.bonusKey)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF6D6875)
+                text = "Vida: $currentHp / ${character.maxHp}",
+                fontWeight = FontWeight.SemiBold
             )
-
-            if (isSelected) {
-                Text(
-                    text = t(language, "selected"),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color(0xFF00875A),
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            LinearProgressIndicator(
+                progress = hpPercent.coerceIn(0f, 1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(50.dp)),
+                color = barColor,
+                trackColor = Color(0xFFE0E0E0)
+            )
         }
     }
 }
 
 @Composable
-fun PurchaseSummary(
-    language: String,
-    selectedPack: GamePack?
-) {
+fun AttackButton(attack: AttackMove, onAttack: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onAttack),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = t(language, "purchase_summary"),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF3A0CA3)
-            )
-
-            if (selectedPack == null) {
-                Text(
-                    text = t(language, "no_pack"),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            } else {
-                Text("${t(language, "product")}: ${t(language, selectedPack.nameKey)}")
-                Text("${t(language, "price")}: $${selectedPack.priceUsd}")
-                Text(
-                    "${t(language, "content")}: ${selectedPack.coins} ${t(language, "coins_lower")} " +
-                            "${t(language, "and")} ${t(language, selectedPack.bonusKey)}"
-                )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = attack.name, fontWeight = FontWeight.Bold, color = Color(0xFF3A0CA3))
+                Text(text = attack.description, color = Color(0xFF5F5F7A))
             }
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(text = "${attack.damage} daño", fontWeight = FontWeight.Bold, color = Color(0xFFE63946))
         }
     }
 }
 
 @Composable
-fun SettingCard(
-    title: String,
-    subtitle: String,
-    content: @Composable () -> Unit
-) {
+fun SettingsCard(title: String, content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -1289,448 +1483,297 @@ fun SettingCard(
     ) {
         Column(
             modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF3A0CA3)
-                )
-
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF6D6875)
-                )
-            }
-
+            Text(text = title, fontWeight = FontWeight.Bold, color = Color(0xFF3A0CA3))
             content()
         }
     }
 }
 
 @Composable
-fun OptionsBar(
-    options: List<String>,
-    selectedOption: String,
-    optionLabel: (String) -> String,
-    onOptionSelected: (String) -> Unit
-) {
-    Row(
-        modifier = Modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+fun OptionChip(text: String, selected: Boolean, onClick: () -> Unit) {
+    val background = if (selected) MaterialTheme.colorScheme.primary else Color(0xFFF1F0FF)
+    val contentColor = if (selected) Color.White else Color(0xFF3A0CA3)
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50.dp))
+            .background(background)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
     ) {
-        options.forEach { option ->
-            if (selectedOption == option) {
-                Button(
-                    onClick = { onOptionSelected(option) },
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text(optionLabel(option))
-                }
-            } else {
-                OutlinedButton(
-                    onClick = { onOptionSelected(option) },
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text(optionLabel(option))
-                }
-            }
-        }
+        Text(text = text, color = contentColor, fontWeight = FontWeight.SemiBold)
     }
 }
 
 @Composable
-fun VolumeControl(
-    volume: Float,
-    onVolumeChange: (Float) -> Unit
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Slider(
-            value = volume,
-            onValueChange = onVolumeChange,
-            valueRange = 0f..100f
-        )
+fun rememberImageBitmap(profileImageUri: String?): ImageBitmap? {
+    val context = LocalContext.current
+    var imageBitmap by remember(profileImageUri) { mutableStateOf<ImageBitmap?>(null) }
 
-        Text(
-            text = "${volume.toInt()}%",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF6C63FF)
-        )
+    LaunchedEffect(profileImageUri) {
+        imageBitmap = if (profileImageUri != null) {
+            try {
+                val uri = Uri.parse(profileImageUri)
+                val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    val source = ImageDecoder.createSource(context.contentResolver, uri)
+                    ImageDecoder.decodeBitmap(source)
+                } else {
+                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+                }
+                bitmap.asImageBitmap()
+            } catch (_: Exception) {
+                null
+            }
+        } else {
+            null
+        }
     }
+
+    return imageBitmap
 }
 
-fun normalizeLanguage(value: String?): String {
-    return when (value) {
-        "es", "Español", "Spanish", "Espagnol" -> "es"
-        "en", "Inglés", "English", "Anglais" -> "en"
-        "fr", "Francés", "French", "Français" -> "fr"
+fun getPlayableCharacters(): List<BattleCharacter> {
+    return listOf(
+        BattleCharacter(
+            id = 1,
+            name = "Kael",
+            role = "Guerrero del Núcleo",
+            maxHp = 125,
+            attackBonus = 6,
+            description = "Personaje equilibrado, ideal para resistir ataques y causar daño constante.",
+            attacks = listOf(
+                AttackMove("Golpe de energía", 20, "Ataque básico con energía digital."),
+                AttackMove("Corte del núcleo", 30, "Ataque fuerte contra el enemigo."),
+                AttackMove("Impacto defensivo", 16, "Ataque seguro de daño moderado.")
+            )
+        ),
+        BattleCharacter(
+            id = 2,
+            name = "Luna",
+            role = "Hechicera de datos",
+            maxHp = 100,
+            attackBonus = 11,
+            description = "Personaje rápido y ofensivo. Tiene menos vida, pero sus ataques son más fuertes.",
+            attacks = listOf(
+                AttackMove("Rayo binario", 24, "Descarga mágica de código puro."),
+                AttackMove("Pulso de datos", 34, "Ataque poderoso que altera al rival."),
+                AttackMove("Chispa digital", 18, "Ataque rápido y preciso.")
+            )
+        ),
+        BattleCharacter(
+            id = 3,
+            name = "Rex",
+            role = "Tanque de la arena",
+            maxHp = 150,
+            attackBonus = 3,
+            description = "Personaje defensivo. Tiene mucha vida, aunque su daño es más bajo.",
+            attacks = listOf(
+                AttackMove("Puño blindado", 18, "Golpe pesado con armadura digital."),
+                AttackMove("Carga frontal", 26, "Ataque físico directo."),
+                AttackMove("Contraataque", 20, "Movimiento estable y resistente.")
+            )
+        )
+    )
+}
+
+fun getStoryChapters(): List<StoryChapter> {
+    val glitchBasic = BattleCharacter(
+        id = 101,
+        name = "Glitch menor",
+        role = "Error corrupto del sistema",
+        maxHp = 95,
+        attackBonus = 4,
+        description = "Criatura digital nacida de una falla menor del núcleo.",
+        attacks = listOf(
+            AttackMove("Ruido digital", 15, "Ataque inestable de baja potencia."),
+            AttackMove("Código roto", 22, "Golpe corrupto contra el jugador."),
+            AttackMove("Pantalla azul", 18, "Ataque inesperado del sistema.")
+        )
+    )
+
+    val glitchAdvanced = BattleCharacter(
+        id = 102,
+        name = "Glitch avanzado",
+        role = "Amenaza adaptativa",
+        maxHp = 125,
+        attackBonus = 7,
+        description = "Enemigo que aprende de los movimientos del jugador.",
+        attacks = listOf(
+            AttackMove("Error crítico", 24, "Ataque fuerte al sistema del jugador."),
+            AttackMove("Fragmento corrupto", 28, "Daño directo con energía oscura."),
+            AttackMove("Reinicio forzado", 20, "Ataque rápido de interrupción.")
+        )
+    )
+
+    val glitchSupreme = BattleCharacter(
+        id = 103,
+        name = "Glitch Supremo",
+        role = "Jefe final del núcleo",
+        maxHp = 160,
+        attackBonus = 9,
+        description = "La forma más peligrosa de la corrupción digital.",
+        attacks = listOf(
+            AttackMove("Colapso del núcleo", 30, "Ataque devastador de energía corrupta."),
+            AttackMove("Tormenta de bugs", 26, "Ataque múltiple contra el jugador."),
+            AttackMove("Virus final", 34, "Ataque poderoso del jefe final.")
+        )
+    )
+
+    return listOf(
+        StoryChapter(
+            id = 1,
+            title = "Capítulo 1: El despertar del núcleo",
+            description = "El sistema Battle.io ha sido atacado por criaturas Glitch. Tu misión es entrar a la arena, elegir un campeón y recuperar el primer fragmento del núcleo.",
+            enemy = glitchBasic,
+            rewardCoins = 250,
+            rewardXp = 120
+        ),
+        StoryChapter(
+            id = 2,
+            title = "Capítulo 2: La arena corrupta",
+            description = "Después de la primera victoria, la arena empieza a cambiar sus reglas. Los enemigos ahora reconocen tus movimientos y atacan con más fuerza.",
+            enemy = glitchAdvanced,
+            rewardCoins = 400,
+            rewardXp = 180
+        ),
+        StoryChapter(
+            id = 3,
+            title = "Capítulo 3: El fragmento final",
+            description = "El núcleo está cerca de ser restaurado, pero el Glitch Supremo aparece como la última defensa del sistema corrupto.",
+            enemy = glitchSupreme,
+            rewardCoins = 700,
+            rewardXp = 300
+        )
+    )
+}
+
+fun normalizeLanguage(language: String?): String {
+    return when (language) {
+        "en" -> "en"
         else -> "es"
     }
 }
 
-fun normalizeQuality(value: String?): String {
-    return when (value) {
-        "low", "Baja", "Low", "Faible" -> "low"
-        "medium", "Media", "Medium", "Moyenne" -> "medium"
-        "high", "Alta", "High", "Haute" -> "high"
-        "ultra", "Ultra" -> "ultra"
+fun normalizeQuality(quality: String?): String {
+    return when (quality) {
+        "low", "medium", "high" -> quality
         else -> "high"
     }
 }
 
-fun languageLabel(currentLanguage: String, languageCode: String): String {
-    return when (currentLanguage) {
-        "en" -> when (languageCode) {
-            "es" -> "Spanish"
-            "en" -> "English"
-            "fr" -> "French"
-            else -> "Spanish"
-        }
-
-        "fr" -> when (languageCode) {
-            "es" -> "Espagnol"
-            "en" -> "Anglais"
-            "fr" -> "Français"
-            else -> "Espagnol"
-        }
-
-        else -> when (languageCode) {
-            "es" -> "Español"
-            "en" -> "Inglés"
-            "fr" -> "Francés"
-            else -> "Español"
-        }
-    }
-}
-
-fun qualityLabel(language: String, qualityCode: String): String {
-    return when (language) {
-        "en" -> when (qualityCode) {
-            "low" -> "Low"
-            "medium" -> "Medium"
-            "high" -> "High"
-            "ultra" -> "Ultra"
-            else -> "High"
-        }
-
-        "fr" -> when (qualityCode) {
-            "low" -> "Faible"
-            "medium" -> "Moyenne"
-            "high" -> "Haute"
-            "ultra" -> "Ultra"
-            else -> "Haute"
-        }
-
-        else -> when (qualityCode) {
-            "low" -> "Baja"
-            "medium" -> "Media"
-            "high" -> "Alta"
-            "ultra" -> "Ultra"
-            else -> "Alta"
-        }
-    }
-}
-
 fun t(language: String, key: String): String {
-    return when (language) {
-        "en" -> when (key) {
-            "nav_home" -> "Home"
-            "nav_matches" -> "Matches"
-            "nav_store" -> "Store"
-            "nav_profile" -> "Profile"
-            "nav_settings" -> "Settings"
+    val es = mapOf(
+        "nav_home" to "Inicio",
+        "nav_matches" to "Partidas",
+        "nav_store" to "Tienda",
+        "nav_profile" to "Perfil",
+        "nav_settings" to "Config",
+        "profile_photo" to "Foto de perfil",
+        "quick_actions" to "Acciones rápidas",
+        "go_store" to "Ir a la tienda",
+        "edit_profile" to "Editar perfil",
+        "victories" to "Victorias",
+        "total" to "Total",
+        "won_sub" to "ganadas",
+        "played_sub" to "jugadas",
+        "matches_title" to "Partidas",
+        "matches_description" to "Juega partidas rápidas o entra al modo historia para avanzar en Battle.io.",
+        "play_simulated" to "Jugar partida rápida",
+        "match_quick" to "Partida rápida",
+        "match_survival" to "Modo supervivencia",
+        "match_competitive" to "Partida competitiva",
+        "match_weekly" to "Reto semanal",
+        "result_win" to "Victoria",
+        "result_loss" to "Derrota",
+        "store_title" to "Tienda",
+        "pack_initial" to "Paquete inicial",
+        "pack_pro" to "Paquete Pro",
+        "pack_legendary" to "Paquete legendario",
+        "bonus_initial" to "Ideal para comenzar con ventaja.",
+        "bonus_pro" to "Más monedas y mejor rendimiento.",
+        "bonus_legendary" to "Para jugadores que quieren dominar la arena.",
+        "buy_pack" to "Comprar paquete",
+        "profile_title" to "Perfil del jugador",
+        "change_photo" to "Cambiar foto",
+        "name" to "Nombre",
+        "email" to "Correo",
+        "bio" to "Biografía",
+        "save_changes" to "Guardar cambios",
+        "logout" to "Cerrar sesión",
+        "settings_title" to "Configuración",
+        "language" to "Idioma",
+        "graphics_quality" to "Calidad gráfica",
+        "quality_low" to "Baja",
+        "quality_medium" to "Media",
+        "quality_high" to "Alta",
+        "music_volume" to "Volumen de música",
+        "sound_volume" to "Volumen de efectos",
+        "snackbar_match_won" to "Partida ganada: +150 monedas y +1 nivel",
+        "snackbar_select_pack" to "Selecciona un paquete primero",
+        "snackbar_purchase" to "Compra realizada",
+        "snackbar_profile_saved" to "Perfil guardado correctamente",
+        "snackbar_logout" to "Sesión cerrada de forma simulada"
+    )
 
-            "welcome" -> "Welcome"
-            "level" -> "Level"
-            "coins" -> "Coins"
-            "coins_lower" -> "coins"
-            "won" -> "Won"
-            "played" -> "Played"
-            "matches" -> "Matches"
-            "total" -> "Total"
-            "quick_actions" -> "Quick actions"
-            "go_store" -> "Go to store"
-            "edit_profile" -> "Edit profile"
+    val en = mapOf(
+        "nav_home" to "Home",
+        "nav_matches" to "Matches",
+        "nav_store" to "Store",
+        "nav_profile" to "Profile",
+        "nav_settings" to "Settings",
+        "profile_photo" to "Profile photo",
+        "quick_actions" to "Quick actions",
+        "go_store" to "Go to store",
+        "edit_profile" to "Edit profile",
+        "victories" to "Victories",
+        "total" to "Total",
+        "won_sub" to "won",
+        "played_sub" to "played",
+        "matches_title" to "Matches",
+        "matches_description" to "Play quick matches or enter story mode to progress in Battle.io.",
+        "play_simulated" to "Play quick match",
+        "match_quick" to "Quick match",
+        "match_survival" to "Survival mode",
+        "match_competitive" to "Competitive match",
+        "match_weekly" to "Weekly challenge",
+        "result_win" to "Victory",
+        "result_loss" to "Defeat",
+        "store_title" to "Store",
+        "pack_initial" to "Initial pack",
+        "pack_pro" to "Pro pack",
+        "pack_legendary" to "Legendary pack",
+        "bonus_initial" to "Ideal to start with an advantage.",
+        "bonus_pro" to "More coins and better progress.",
+        "bonus_legendary" to "For players who want to dominate the arena.",
+        "buy_pack" to "Buy pack",
+        "profile_title" to "Player profile",
+        "change_photo" to "Change photo",
+        "name" to "Name",
+        "email" to "Email",
+        "bio" to "Biography",
+        "save_changes" to "Save changes",
+        "logout" to "Log out",
+        "settings_title" to "Settings",
+        "language" to "Language",
+        "graphics_quality" to "Graphics quality",
+        "quality_low" to "Low",
+        "quality_medium" to "Medium",
+        "quality_high" to "High",
+        "music_volume" to "Music volume",
+        "sound_volume" to "Sound volume",
+        "snackbar_match_won" to "Match won: +150 coins and +1 level",
+        "snackbar_select_pack" to "Select a pack first",
+        "snackbar_purchase" to "Purchase completed",
+        "snackbar_profile_saved" to "Profile saved successfully",
+        "snackbar_logout" to "Session closed as simulation"
+    )
 
-            "matches_title" -> "Matches"
-            "matches_description" -> "Match history and simulation of a new match."
-            "victories" -> "Victories"
-            "won_sub" -> "Won"
-            "played_sub" -> "Played"
-            "play_simulated" -> "Play simulated match"
-            "match_quick" -> "Quick battle"
-            "match_survival" -> "Survival mode"
-            "match_competitive" -> "Competitive duel"
-            "match_weekly" -> "Weekly challenge"
-            "result_win" -> "Victory"
-            "result_loss" -> "Defeat"
-
-            "store_title" -> "Game store"
-            "store_description" -> "Choose a pack to recharge your account."
-            "current_balance" -> "Current balance"
-            "available_coins" -> "available coins"
-            "pack_initial" -> "Starter Pack"
-            "pack_pro" -> "Pro Pack"
-            "pack_legendary" -> "Legendary Pack"
-            "bonus_initial" -> "+ 50 gems"
-            "bonus_pro" -> "+ 150 gems"
-            "bonus_legendary" -> "+ 300 gems"
-            "bonus" -> "Bonus"
-            "selected" -> "Selected"
-            "purchase_summary" -> "Purchase summary"
-            "no_pack" -> "You have not selected any pack."
-            "product" -> "Product"
-            "price" -> "Price"
-            "content" -> "Content"
-            "buy_now" -> "Buy now"
-            "and" -> "and"
-
-            "profile_title" -> "Player profile"
-            "profile_description" -> "User data and progress inside the game."
-            "profile_photo" -> "Profile photo"
-            "choose_profile_photo" -> "Choose profile photo"
-            "player_without_name" -> "Player without name"
-            "email_not_registered" -> "Email not registered"
-            "current" -> "Current"
-            "balance" -> "Balance"
-            "edit_info" -> "Edit information"
-            "name" -> "Name"
-            "email" -> "Email"
-            "bio" -> "Biography"
-            "save_profile" -> "Save profile"
-            "logout" -> "Log out"
-            "player_summary" -> "Player summary"
-            "matches_played" -> "Matches played"
-            "matches_won" -> "Matches won"
-            "performance" -> "Performance"
-
-            "settings_title" -> "Settings"
-            "settings_description" -> "Adjust the game experience according to your preferences."
-            "graphics" -> "Graphics"
-            "current_quality" -> "Current quality"
-            "language" -> "Language"
-            "current_language" -> "Current language"
-            "music" -> "Music"
-            "sound_effects" -> "Sound effects"
-            "current_volume" -> "Current volume"
-
-            "snackbar_match_won" -> "Simulated match won. +150 coins and +1 level."
-            "snackbar_select_pack" -> "You must select a pack first."
-            "snackbar_purchase" -> "Simulated purchase"
-            "snackbar_added" -> "Added"
-            "snackbar_complete_profile" -> "Complete all profile fields."
-            "snackbar_profile_saved" -> "Profile saved successfully."
-            "snackbar_logout" -> "Session closed successfully."
-
-            else -> key
-        }
-
-        "fr" -> when (key) {
-            "nav_home" -> "Accueil"
-            "nav_matches" -> "Parties"
-            "nav_store" -> "Boutique"
-            "nav_profile" -> "Profil"
-            "nav_settings" -> "Paramètres"
-
-            "welcome" -> "Bienvenue"
-            "level" -> "Niveau"
-            "coins" -> "Pièces"
-            "coins_lower" -> "pièces"
-            "won" -> "Gagnées"
-            "played" -> "Jouées"
-            "matches" -> "Parties"
-            "total" -> "Total"
-            "quick_actions" -> "Actions rapides"
-            "go_store" -> "Aller à la boutique"
-            "edit_profile" -> "Modifier le profil"
-
-            "matches_title" -> "Parties"
-            "matches_description" -> "Historique des parties et simulation d’une nouvelle partie."
-            "victories" -> "Victoires"
-            "won_sub" -> "Gagnées"
-            "played_sub" -> "Jouées"
-            "play_simulated" -> "Jouer une partie simulée"
-            "match_quick" -> "Bataille rapide"
-            "match_survival" -> "Mode survie"
-            "match_competitive" -> "Duel compétitif"
-            "match_weekly" -> "Défi hebdomadaire"
-            "result_win" -> "Victoire"
-            "result_loss" -> "Défaite"
-
-            "store_title" -> "Boutique du jeu"
-            "store_description" -> "Sélectionnez un pack pour recharger votre compte."
-            "current_balance" -> "Solde actuel"
-            "available_coins" -> "pièces disponibles"
-            "pack_initial" -> "Pack initial"
-            "pack_pro" -> "Pack pro"
-            "pack_legendary" -> "Pack légendaire"
-            "bonus_initial" -> "+ 50 gemmes"
-            "bonus_pro" -> "+ 150 gemmes"
-            "bonus_legendary" -> "+ 300 gemmes"
-            "bonus" -> "Bonus"
-            "selected" -> "Sélectionné"
-            "purchase_summary" -> "Résumé de l’achat"
-            "no_pack" -> "Vous n’avez sélectionné aucun pack."
-            "product" -> "Produit"
-            "price" -> "Prix"
-            "content" -> "Contenu"
-            "buy_now" -> "Acheter maintenant"
-            "and" -> "et"
-
-            "profile_title" -> "Profil du joueur"
-            "profile_description" -> "Données de l’utilisateur et progression dans le jeu."
-            "profile_photo" -> "Photo de profil"
-            "choose_profile_photo" -> "Choisir une photo de profil"
-            "player_without_name" -> "Joueur sans nom"
-            "email_not_registered" -> "Email non enregistré"
-            "current" -> "Actuel"
-            "balance" -> "Solde"
-            "edit_info" -> "Modifier les informations"
-            "name" -> "Nom"
-            "email" -> "Email"
-            "bio" -> "Biographie"
-            "save_profile" -> "Enregistrer le profil"
-            "logout" -> "Se déconnecter"
-            "player_summary" -> "Résumé du joueur"
-            "matches_played" -> "Parties jouées"
-            "matches_won" -> "Parties gagnées"
-            "performance" -> "Performance"
-
-            "settings_title" -> "Paramètres"
-            "settings_description" -> "Ajustez l’expérience du jeu selon vos préférences."
-            "graphics" -> "Graphismes"
-            "current_quality" -> "Qualité actuelle"
-            "language" -> "Langue"
-            "current_language" -> "Langue actuelle"
-            "music" -> "Musique"
-            "sound_effects" -> "Effets sonores"
-            "current_volume" -> "Volume actuel"
-
-            "snackbar_match_won" -> "Partie simulée gagnée. +150 pièces et +1 niveau."
-            "snackbar_select_pack" -> "Vous devez d’abord sélectionner un pack."
-            "snackbar_purchase" -> "Achat simulé"
-            "snackbar_added" -> "Ajouté"
-            "snackbar_complete_profile" -> "Complétez tous les champs du profil."
-            "snackbar_profile_saved" -> "Profil enregistré avec succès."
-            "snackbar_logout" -> "Session fermée avec succès."
-
-            else -> key
-        }
-
-        else -> when (key) {
-            "nav_home" -> "Inicio"
-            "nav_matches" -> "Partidas"
-            "nav_store" -> "Tienda"
-            "nav_profile" -> "Perfil"
-            "nav_settings" -> "Config."
-
-            "welcome" -> "Bienvenido"
-            "level" -> "Nivel"
-            "coins" -> "Monedas"
-            "coins_lower" -> "monedas"
-            "won" -> "Ganadas"
-            "played" -> "Jugadas"
-            "matches" -> "Partidas"
-            "total" -> "Total"
-            "quick_actions" -> "Accesos rápidos"
-            "go_store" -> "Ir a la tienda"
-            "edit_profile" -> "Editar perfil"
-
-            "matches_title" -> "Partidas"
-            "matches_description" -> "Historial de partidas y simulación de una nueva partida."
-            "victories" -> "Victorias"
-            "won_sub" -> "Ganadas"
-            "played_sub" -> "Jugadas"
-            "play_simulated" -> "Jugar partida simulada"
-            "match_quick" -> "Batalla rápida"
-            "match_survival" -> "Modo supervivencia"
-            "match_competitive" -> "Duelo competitivo"
-            "match_weekly" -> "Reto semanal"
-            "result_win" -> "Victoria"
-            "result_loss" -> "Derrota"
-
-            "store_title" -> "Tienda del juego"
-            "store_description" -> "Seleccioná un pack para recargar tu cuenta."
-            "current_balance" -> "Saldo actual"
-            "available_coins" -> "monedas disponibles"
-            "pack_initial" -> "Pack Inicial"
-            "pack_pro" -> "Pack Pro"
-            "pack_legendary" -> "Pack Legendario"
-            "bonus_initial" -> "+ 50 gemas"
-            "bonus_pro" -> "+ 150 gemas"
-            "bonus_legendary" -> "+ 300 gemas"
-            "bonus" -> "Bonus"
-            "selected" -> "Seleccionado"
-            "purchase_summary" -> "Resumen de compra"
-            "no_pack" -> "No has seleccionado ningún pack."
-            "product" -> "Producto"
-            "price" -> "Precio"
-            "content" -> "Contenido"
-            "buy_now" -> "Comprar ahora"
-            "and" -> "y"
-
-            "profile_title" -> "Perfil de jugador"
-            "profile_description" -> "Datos del usuario y progreso dentro del juego."
-            "profile_photo" -> "Foto de perfil"
-            "choose_profile_photo" -> "Elegir foto de perfil"
-            "player_without_name" -> "Jugador sin nombre"
-            "email_not_registered" -> "Correo no registrado"
-            "current" -> "Actual"
-            "balance" -> "Saldo"
-            "edit_info" -> "Editar información"
-            "name" -> "Nombre"
-            "email" -> "Correo"
-            "bio" -> "Biografía"
-            "save_profile" -> "Guardar perfil"
-            "logout" -> "Cerrar sesión"
-            "player_summary" -> "Resumen del jugador"
-            "matches_played" -> "Partidas jugadas"
-            "matches_won" -> "Partidas ganadas"
-            "performance" -> "Rendimiento"
-
-            "settings_title" -> "Configuración"
-            "settings_description" -> "Ajustá la experiencia del juego según tus preferencias."
-            "graphics" -> "Gráficos"
-            "current_quality" -> "Calidad actual"
-            "language" -> "Idioma"
-            "current_language" -> "Idioma actual"
-            "music" -> "Música"
-            "sound_effects" -> "Efectos de sonido"
-            "current_volume" -> "Volumen actual"
-
-            "snackbar_match_won" -> "Partida simulada ganada. +150 monedas y +1 nivel."
-            "snackbar_select_pack" -> "Debés seleccionar un pack primero."
-            "snackbar_purchase" -> "Compra simulada"
-            "snackbar_added" -> "Se agregaron"
-            "snackbar_complete_profile" -> "Completá todos los campos del perfil."
-            "snackbar_profile_saved" -> "Perfil guardado correctamente."
-            "snackbar_logout" -> "Sesión cerrada correctamente."
-
-            else -> key
-        }
+    return if (language == "en") {
+        en[key] ?: es[key] ?: key
+    } else {
+        es[key] ?: key
     }
-}
-
-fun obtenerIniciales(nombre: String): String {
-    val partes = nombre
-        .trim()
-        .split(" ")
-        .filter { it.isNotBlank() }
-
-    return when {
-        partes.isEmpty() -> "J"
-        partes.size == 1 -> partes[0].take(2).uppercase()
-        else -> "${partes[0].first()}${partes[1].first()}".uppercase()
-    }
-}
-
-fun calcularRendimiento(ganadas: Int, jugadas: Int): Int {
-    if (jugadas == 0) return 0
-    return ((ganadas.toDouble() / jugadas.toDouble()) * 100).toInt()
 }

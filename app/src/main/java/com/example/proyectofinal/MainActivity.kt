@@ -3,11 +3,11 @@ package com.example.proyectofinal
 import androidx.compose.foundation.layout.*
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -55,6 +55,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -64,6 +65,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,8 +78,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.proyectofinal.data.model.Usuario
+import com.example.proyectofinal.viewmodel.UsuarioViewModel
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -159,11 +165,14 @@ data class StoryChapter(
 fun BattleIoApp() {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("battle_io_data", Context.MODE_PRIVATE) }
+    val usuarioViewModel: UsuarioViewModel = viewModel()
+    val usuarioUiState by usuarioViewModel.uiState.collectAsState()
     val savedPackId = prefs.getInt("selectedPackId", -1)
 
     var selectedNav by rememberSaveable { mutableStateOf(prefs.getString("selectedNav", "inicio") ?: "inicio") }
     var nombre by rememberSaveable { mutableStateOf(prefs.getString("nombre", "Jonathan Rivera") ?: "Jonathan Rivera") }
     var correo by rememberSaveable { mutableStateOf(prefs.getString("correo", "jonathan@uam.edu.ni") ?: "jonathan@uam.edu.ni") }
+    var password by rememberSaveable { mutableStateOf("") }
     var bio by rememberSaveable {
         mutableStateOf(
             prefs.getString(
@@ -190,6 +199,15 @@ fun BattleIoApp() {
     var battleMessage by rememberSaveable { mutableStateOf("El combate está por comenzar.") }
     var battleFinished by rememberSaveable { mutableStateOf(false) }
 
+    LaunchedEffect(usuarioUiState.usuarioActivo?.id) {
+        usuarioUiState.usuarioActivo?.let { usuario ->
+            nombre = usuario.username
+            correo = usuario.email
+            bio = usuario.description
+            password = usuario.password
+        }
+    }
+
     LaunchedEffect(
         selectedNav,
         nombre,
@@ -208,24 +226,24 @@ fun BattleIoApp() {
         selectedCharacterId,
         storyProgress
     ) {
-        prefs.edit()
-            .putString("selectedNav", selectedNav)
-            .putString("nombre", nombre)
-            .putString("correo", correo)
-            .putString("bio", bio)
-            .putString("profileImageUri", profileImageUri)
-            .putInt("nivel", nivel)
-            .putInt("monedas", monedas)
-            .putInt("partidasGanadas", partidasGanadas)
-            .putInt("partidasJugadas", partidasJugadas)
-            .putInt("selectedPackId", selectedPackId ?: -1)
-            .putString("graphicsQuality", graphicsQuality)
-            .putString("selectedLanguage", selectedLanguage)
-            .putFloat("musicVolume", musicVolume)
-            .putFloat("soundVolume", soundVolume)
-            .putInt("selectedCharacterId", selectedCharacterId)
-            .putInt("storyProgress", storyProgress)
-            .apply()
+        prefs.edit {
+            putString("selectedNav", selectedNav)
+            putString("nombre", nombre)
+            putString("correo", correo)
+            putString("bio", bio)
+            putString("profileImageUri", profileImageUri)
+            putInt("nivel", nivel)
+            putInt("monedas", monedas)
+            putInt("partidasGanadas", partidasGanadas)
+            putInt("partidasJugadas", partidasJugadas)
+            putInt("selectedPackId", selectedPackId ?: -1)
+            putString("graphicsQuality", graphicsQuality)
+            putString("selectedLanguage", selectedLanguage)
+            putFloat("musicVolume", musicVolume)
+            putFloat("soundVolume", soundVolume)
+            putInt("selectedCharacterId", selectedCharacterId)
+            putInt("storyProgress", storyProgress)
+        }
     }
 
     val packs = remember {
@@ -441,14 +459,71 @@ fun BattleIoApp() {
                     nombre = nombre,
                     correo = correo,
                     bio = bio,
+                    password = password,
                     profileImageUri = profileImageUri,
+                    usuarioActivo = usuarioUiState.usuarioActivo,
+                    isLoadingUsuario = usuarioUiState.isLoading,
+                    apiMessage = usuarioUiState.message,
+                    apiError = usuarioUiState.errorMessage,
                     onNombreChange = { nombre = it },
                     onCorreoChange = { correo = it },
                     onBioChange = { bio = it },
+                    onPasswordChange = { password = it },
                     onProfileImageChange = { profileImageUri = it },
+                    onRefreshUsuario = { usuarioViewModel.refreshUsuarios() },
                     onSave = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar(t(selectedLanguage, "snackbar_profile_saved"))
+                        val usuario = Usuario(
+                            id = usuarioUiState.usuarioActivo?.id,
+                            username = nombre.trim(),
+                            password = password,
+                            description = bio.trim(),
+                            email = correo.trim()
+                        )
+
+                        if (usuario.username.isBlank() || usuario.password.isBlank() || usuario.email.isBlank()) {
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Completa nombre, correo y contraseña antes de guardar")
+                            }
+                        } else {
+                            usuarioViewModel.saveUsuario(usuario) { saved ->
+                                if (saved != null) {
+                                    nombre = saved.username
+                                    correo = saved.email
+                                    bio = saved.description
+                                    password = saved.password
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("Usuario sincronizado con la API")
+                                    }
+                                } else {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("No se pudo guardar el usuario en la API")
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    onDeleteUsuario = {
+                        val usuarioId = usuarioUiState.usuarioActivo?.id
+                        if (usuarioId == null) {
+                            scope.launch {
+                                snackbarHostState.showSnackbar("No hay un usuario cargado para eliminar")
+                            }
+                        } else {
+                            usuarioViewModel.deleteUsuario(usuarioId) { deleted ->
+                                if (deleted) {
+                                    nombre = ""
+                                    correo = ""
+                                    password = ""
+                                    bio = ""
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("Usuario eliminado de la API")
+                                    }
+                                } else {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("No se pudo eliminar el usuario")
+                                    }
+                                }
+                            }
                         }
                     },
                     onLogout = {
@@ -1138,12 +1213,20 @@ fun ProfileScreen(
     nombre: String,
     correo: String,
     bio: String,
+    password: String,
     profileImageUri: String?,
+    usuarioActivo: Usuario?,
+    isLoadingUsuario: Boolean,
+    apiMessage: String?,
+    apiError: String?,
     onNombreChange: (String) -> Unit,
     onCorreoChange: (String) -> Unit,
     onBioChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
     onProfileImageChange: (String?) -> Unit,
+    onRefreshUsuario: () -> Unit,
     onSave: () -> Unit,
+    onDeleteUsuario: () -> Unit,
     onLogout: () -> Unit
 ) {
     val context = LocalContext.current
@@ -1223,6 +1306,32 @@ fun ProfileScreen(
                     modifier = Modifier.padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    Text(
+                        text = "Usuario de la API",
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF3A0CA3)
+                    )
+                    Text(
+                        text = if (usuarioActivo?.id != null) "Usuario remoto ID: ${usuarioActivo.id}" else "No hay usuario remoto seleccionado",
+                        color = Color(0xFF5F5F7A)
+                    )
+                    if (isLoadingUsuario) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    }
+                    if (!apiMessage.isNullOrBlank()) {
+                        Text(text = apiMessage, color = Color(0xFF00A896))
+                    }
+                    if (!apiError.isNullOrBlank()) {
+                        Text(text = apiError, color = Color(0xFFE63946))
+                    }
+                    OutlinedButton(
+                        onClick = onRefreshUsuario,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoadingUsuario,
+                        shape = RoundedCornerShape(18.dp)
+                    ) {
+                        Text("Actualizar desde API")
+                    }
                     OutlinedTextField(
                         value = nombre,
                         onValueChange = onNombreChange,
@@ -1239,6 +1348,14 @@ fun ProfileScreen(
                         singleLine = true
                     )
                     OutlinedTextField(
+                        value = password,
+                        onValueChange = onPasswordChange,
+                        label = { Text("Contraseña") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation()
+                    )
+                    OutlinedTextField(
                         value = bio,
                         onValueChange = onBioChange,
                         label = { Text(t(language, "bio")) },
@@ -1248,13 +1365,25 @@ fun ProfileScreen(
                     Button(
                         onClick = onSave,
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoadingUsuario,
                         shape = RoundedCornerShape(18.dp)
                     ) {
-                        Text(t(language, "save_changes"))
+                        Text(if (usuarioActivo?.id == null) "Crear usuario en API" else t(language, "save_changes"))
+                    }
+                    if (usuarioActivo?.id != null) {
+                        OutlinedButton(
+                            onClick = onDeleteUsuario,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !isLoadingUsuario,
+                            shape = RoundedCornerShape(18.dp)
+                        ) {
+                            Text("Eliminar usuario de la API")
+                        }
                     }
                     OutlinedButton(
                         onClick = onLogout,
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoadingUsuario,
                         shape = RoundedCornerShape(18.dp)
                     ) {
                         Text(t(language, "logout"))
@@ -1388,7 +1517,7 @@ fun StoryProgressCard(storyProgress: Int, onGoToStory: () -> Unit) {
                 color = Color.White.copy(alpha = 0.9f)
             )
             LinearProgressIndicator(
-                progress = storyProgress / 3f,
+                progress = { storyProgress / 3f },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(10.dp)
@@ -1434,7 +1563,7 @@ fun FighterCard(title: String, character: BattleCharacter, currentHp: Int, barCo
                 fontWeight = FontWeight.SemiBold
             )
             LinearProgressIndicator(
-                progress = hpPercent.coerceIn(0f, 1f),
+                progress = { hpPercent.coerceIn(0f, 1f) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(12.dp)
@@ -1516,14 +1645,16 @@ fun rememberImageBitmap(profileImageUri: String?): ImageBitmap? {
     LaunchedEffect(profileImageUri) {
         imageBitmap = if (profileImageUri != null) {
             try {
-                val uri = Uri.parse(profileImageUri)
+                val uri = profileImageUri.toUri()
                 val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     val source = ImageDecoder.createSource(context.contentResolver, uri)
                     ImageDecoder.decodeBitmap(source)
                 } else {
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+                    context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                        BitmapFactory.decodeStream(inputStream)
+                    }
                 }
-                bitmap.asImageBitmap()
+                bitmap?.asImageBitmap()
             } catch (_: Exception) {
                 null
             }

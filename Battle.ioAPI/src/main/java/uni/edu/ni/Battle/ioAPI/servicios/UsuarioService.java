@@ -1,0 +1,62 @@
+package uni.edu.ni.Battle.ioAPI.servicios;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import uni.edu.ni.Battle.ioAPI.modelos.UsuarioUI;
+import uni.edu.ni.Battle.ioAPI.repository.UsuarioRepository;
+
+import java.util.List;
+
+@Service
+public class UsuarioService {
+
+    private final UsuarioRepository repository;
+    private final PasswordEncoder passwordEncoder;
+
+    public UsuarioService(UsuarioRepository repository, PasswordEncoder passwordEncoder) {
+        this.repository = repository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    public UsuarioUI registrar(UsuarioUI usuario) {
+        usuario.setPassword(passwordEncoder.encode(usuario.getPassword())); // 🔹 hash
+        return repository.save(usuario);
+    }
+
+    public UsuarioUI actualizar(Long id, UsuarioUI usuario) {
+        UsuarioUI existente = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        existente.setUsername(usuario.getUsername());
+        existente.setEmail(usuario.getEmail());
+        existente.setPassword(usuario.getPassword());
+        existente.setDescription(usuario.getDescription());
+        existente.setLevel(usuario.getLevel());
+        existente.setCoins(usuario.getCoins());
+        existente.setWinned_matches(usuario.getWinned_matches());
+        existente.setPlayed_matches(usuario.getPlayed_matches());
+        existente.setStoryProgress(usuario.getStoryProgress());
+
+        return repository.save(existente);
+    }
+
+    public void eliminar(Long id) {
+        repository.deleteById(id);
+    }
+
+    public UsuarioUI obtenerPorId(Long id) {
+        return repository.findById(id).orElse(null);
+    }
+
+    public List<UsuarioUI> listar() {
+        return repository.findAll();
+    }
+
+    public UsuarioUI login(String email, String password) {
+        UsuarioUI usuario = repository.findByEmail(email);
+        if (usuario != null && passwordEncoder.matches(password, usuario.getPassword())) {
+            return usuario;
+        }
+        return null;
+    }
+}

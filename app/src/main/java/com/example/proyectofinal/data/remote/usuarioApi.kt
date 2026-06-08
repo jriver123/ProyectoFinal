@@ -1,29 +1,34 @@
 package com.example.proyectofinal.data.remote
 
-import com.example.proyectofinal.data.model.Usuario
-import retrofit2.http.Body
-import retrofit2.http.DELETE
-import retrofit2.http.GET
-import retrofit2.http.POST
-import retrofit2.http.PUT
-import retrofit2.http.Path
+import com.example.proyectofinal.data.model.LoginRequest
+import com.example.proyectofinal.data.model.LoginResponse
+import com.example.proyectofinal.data.model.UsuarioUI
+import retrofit2.Response
+import retrofit2.http.*
+
 
 interface UsuarioApi {
+	// Login
+	@POST("usuarios/login")
+	suspend fun login(@Body request: LoginRequest): LoginResponse
+
+	// CRUD de usuarios
 	@GET("usuarios")
-	suspend fun getAllUsuarios(): List<Usuario>
+	suspend fun getAllUsuarios(): Response<List<UsuarioUI>>
 
 	@GET("usuarios/{id}")
-	suspend fun getUsuarioById(@Path("id") id: Long): Usuario
+	suspend fun getUsuarioById(@Path("id") id: Long): Response<UsuarioUI>
 
 	@POST("usuarios")
-	suspend fun createUsuario(@Body usuario: Usuario): Usuario
+	suspend fun createUsuario(@Body usuario: UsuarioUI): Response<UsuarioUI>
 
 	@PUT("usuarios/{id}")
-	suspend fun updateUsuario(
-		@Path("id") id: Long,
-		@Body usuario: Usuario
-	): Usuario
+	suspend fun updateUsuario(@Path("id") id: Long, @Body usuario: UsuarioUI): Response<UsuarioUI>
 
 	@DELETE("usuarios/{id}")
-	suspend fun deleteUsuario(@Path("id") id: Long)
+	suspend fun deleteUsuario(@Path("id") id: Long): Response<Unit>
+
+	// Datos combinados (DTO)
+	@GET("usuarios/{id}/detalles")
+	suspend fun getUsuarioDetalles(@Path("id") id: Long): Response<UsuarioUI>
 }

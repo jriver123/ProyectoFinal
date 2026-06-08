@@ -1,39 +1,66 @@
 package com.example.proyectofinal.data.repository
 
-import com.example.proyectofinal.data.model.Usuario
-import com.example.proyectofinal.data.remote.RetrofitClient
+import com.example.proyectofinal.data.local.UsuarioLoginDao
+import com.example.proyectofinal.data.model.*
+import com.example.proyectofinal.data.remote.UsuarioApi
 
 class UsuarioRepository(
-    private val api: com.example.proyectofinal.data.remote.UsuarioApi = RetrofitClient.usuarioApi
+    private val api: UsuarioApi,
+    private val usuarioLoginDao: UsuarioLoginDao
 ) {
-    suspend fun getAllUsuarios(): List<Usuario> {
-        return api.getAllUsuarios()
+
+    // 🔹 Login
+    suspend fun login(request: LoginRequest): LoginResponse {
+        return api.login(request)
     }
 
-    suspend fun getUsuarioById(id: Long): Usuario? {
-        return runCatching {
-            api.getUsuarioById(id)
-        }.getOrNull()
+    // 🔹 Guardar usuario en Room
+    suspend fun guardarUsuarioLocal(usuario: UsuarioLoginEntity) {
+        usuarioLoginDao.insert(usuario)
     }
 
-    suspend fun saveUsuario(usuario: Usuario): Usuario {
-        return if (usuario.id == null) {
-            api.createUsuario(usuario)
+    suspend fun getUsuarioGuardado(): UsuarioLoginEntity? {
+        return usuarioLoginDao.getUsuario()
+    }
+
+    suspend fun logout() {
+        usuarioLoginDao.clear()
+    }
+
+    // 🔹 Obtener detalles del usuario desde la API
+    suspend fun getUsuarioDetalles(id: Long): UsuarioUI {
+        val response = api.getUsuarioById(id)
+        if (response.isSuccessful) {
+            return response.body() ?: throw Exception("Usuario no encontrado")
         } else {
-            api.updateUsuario(usuario.id, usuario)
+            throw Exception("Error al obtener usuario: ${response.code()}")
         }
     }
 
-    suspend fun deleteUsuario(id: Long) {
-        api.deleteUsuario(id)
+    // 🔹 Registrar usuario
+    suspend fun saveUsuario(usuario: UsuarioUI): UsuarioUI {
+        val response = api.createUsuario(usuario)
+        if (response.isSuccessful) {
+            return response.body() ?: throw Exception("Error al registrar usuario")
+        } else {
+            throw Exception("Error al registrar usuario: ${response.code()}")
+        }
     }
 
-    suspend fun getPrimaryUsuario(): Usuario? {
-        return getAllUsuarios().firstOrNull()
+    // 🔹 Actualizar usuario
+    suspend fun updateUsuario(id: Long, usuario: UsuarioUI): UsuarioUI {
+        val response = api.updateUsuario(id, usuario)
+        if (response.isSuccessful) {
+            return response.body() ?: throw Exception("Error al actualizar usuario")
+        } else {
+            throw Exception("Error al actualizar usuario: ${response.code()}")
+        }
     }
 
-    fun isNetworkError(error: Throwable): Boolean {
-        return error is java.io.IOException
+    // 🔹 Eliminar usuario
+    suspend fun deleteUsuario(id: Long): Boolean {
+        val response = api.deleteUsuario(id)
+        return response.isSuccessful
     }
 }
 

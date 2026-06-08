@@ -1,20 +1,38 @@
 package com.example.proyectofinal.data.remote
 
-import com.google.gson.GsonBuilder
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-	private const val BASE_URL = "http://10.26.254.205:8080/api/"
 
+	private const val BASE_URL = "http://192.168.0.227:8080/api/"
+
+	// Interceptor para ver las peticiones/respuestas en Logcat
+
+
+	// Cliente HTTP con timeouts y logging
+	private val okHttpClient = OkHttpClient.Builder()
+		.connectTimeout(30, TimeUnit.SECONDS)
+		.readTimeout(30, TimeUnit.SECONDS)
+		.writeTimeout(30, TimeUnit.SECONDS)
+		.build()
+
+	// Retrofit configurado con Gson
 	private val retrofit: Retrofit by lazy {
 		Retrofit.Builder()
 			.baseUrl(BASE_URL)
-			.addConverterFactory(GsonConverterFactory.create(GsonBuilder().create()))
+			.client(okHttpClient)
+			.addConverterFactory(GsonConverterFactory.create())
 			.build()
 	}
 
+	// Aquí expones tus APIs
 	val usuarioApi: UsuarioApi by lazy {
 		retrofit.create(UsuarioApi::class.java)
 	}
+
+	// Si luego tienes más APIs, las agregas igual:
+	// val productoApi: ProductoApi by lazy { retrofit.create(ProductoApi::class.java) }
 }

@@ -23,11 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.proyectofinal.data.resources.BattleCharacter
+import com.example.proyectofinal.data.resources.*
 
 @Composable
 fun CharacterSelectionScreen(
-    characters: List<BattleCharacter>,
+    characters: List<Hero>,
     selectedCharacterId: Int,
     onSelectCharacter: (Int) -> Unit,
     onStartBattle: () -> Unit,
@@ -83,11 +83,14 @@ fun CharacterSelectionScreen(
                     )
                     Text(text = character.description)
                     Text(
-                        text = "Vida: ${character.maxHp} | Bonus ataque: +${character.attackBonus}",
+                        text = "Vida: ${character.HpStat} | Bonus ataque: +${character.attackStat}",
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Ataques: ${character.attacks.joinToString { it.name }}",
+                        text = "Ataques: ${
+                            getAttacksByIds(*character.attacks.toIntArray())
+                                .joinToString { it.name }
+                        }",
                         color = Color(0xFF5F5F7A)
                     )
                 }

@@ -16,16 +16,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.proyectofinal.data.resources.*
+import kotlin.collections.toIntArray
 
 @Composable
 fun BattleScreen(
-    player: BattleCharacter,
-    enemy: BattleCharacter,
+    player: Hero,
+    enemy: Enemy,
     chapter: StoryChapter,
     playerHp: Int,
     enemyHp: Int,
@@ -35,6 +37,10 @@ fun BattleScreen(
     onExit: () -> Unit,
     onRetry: () -> Unit
 ) {
+    // Convertimos los IDs en objetos AttackMove
+    val playerAttacks = remember { getAttacksByIds(*player.attacks.toIntArray()) }
+    val enemyAttacks = remember { getAttacksByIds(*enemy.attacks.toIntArray()) }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -42,34 +48,17 @@ fun BattleScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Text(
-                text = "Combate por turnos",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF3A0CA3)
-            )
-            Text(
-                text = chapter.title,
-                color = Color(0xFF5F5F7A)
-            )
+            Text("Combate por turnos", style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold, color = Color(0xFF3A0CA3))
+            Text(chapter.title, color = Color(0xFF5F5F7A))
         }
 
         item {
-            FighterCard(
-                title = "Tu personaje",
-                character = player,
-                currentHp = playerHp,
-                barColor = Color(0xFF00A896)
-            )
+            FighterCardHero("Tu personaje", player, playerHp, Color(0xFF00A896))
         }
 
         item {
-            FighterCard(
-                title = "Enemigo",
-                character = enemy,
-                currentHp = enemyHp,
-                barColor = Color(0xFFE63946)
-            )
+            FighterCardEnemy("Enemigo", enemy, enemyHp, Color(0xFFE63946))
         }
 
         item {
@@ -79,43 +68,26 @@ fun BattleScreen(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
             ) {
-                Text(
-                    text = battleMessage,
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                Text(battleMessage, modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyLarge)
             }
         }
 
         if (!battleFinished) {
             item {
-                Text(
-                    text = "Elige un ataque:",
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF3A0CA3)
-                )
+                Text("Elige un ataque:", fontWeight = FontWeight.Bold, color = Color(0xFF3A0CA3))
             }
 
-            items(player.attacks) { attack ->
+            items(playerAttacks) { attack ->
                 AttackButton(attack = attack, onAttack = { onAttack(attack) })
             }
         } else {
             item {
-                Button(
-                    onClick = onRetry,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp)
-                ) {
-                    Text("Intentar otra vez")
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = onExit,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp)
-                ) {
-                    Text("Volver a partidas")
-                }
+                Button(onClick = onRetry, modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp)) { Text("Intentar otra vez") }
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(onClick = onExit, modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp)) { Text("Volver a partidas") }
             }
         }
     }

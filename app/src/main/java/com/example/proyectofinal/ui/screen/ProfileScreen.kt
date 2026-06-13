@@ -146,7 +146,7 @@ fun ProfileScreen(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isLoadingUsuario
                     ) {
-                        Text("Actualizar desde API")
+                        Text("Actualizar")//Actualiza los datos del usuario desde la BD con la ayuda de la API
                     }
 
                     OutlinedTextField(
@@ -193,7 +193,7 @@ fun ProfileScreen(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isLoadingUsuario
                     ) {
-                        Text("Eliminar usuario de la API")
+                        Text("Eliminar usuario")//Elimina el usuario de la BD con la ayuda de la API
                     }
 
                     OutlinedButton(

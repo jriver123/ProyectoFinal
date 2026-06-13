@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.proyectofinal.data.resources.getStoryChapters
+import com.example.proyectofinal.data.resources.*
 
 @Composable
 fun StoryScreen(
@@ -102,7 +102,7 @@ fun StoryScreen(
                         color = Color(0xFF3A0CA3)
                     )
                     Text(
-                        text = "En el mundo digital de Battle.io, una falla del sistema creó enemigos llamados Glitches. Tu misión es entrar a la arena, elegir un campeón y recuperar los fragmentos del núcleo mediante combates por turnos.",
+                        text = "",// Aquí podrías agregar una sinopsis general de la historia
                         color = Color(0xFF34344A)
                     )
                 }

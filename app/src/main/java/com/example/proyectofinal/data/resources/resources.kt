@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlin.random.Random
 
 
 fun normalizeLanguage(language: String?): String {
@@ -151,123 +152,11 @@ fun t(language: String, key: String): String {
         es[key] ?: key
     }
 }
-fun getPlayableCharacters(): List<BattleCharacter> {
-    return listOf(
-        BattleCharacter(
-            id = 1,
-            name = "Kael",
-            role = "Guerrero del Núcleo",
-            maxHp = 125,
-            attackBonus = 6,
-            description = "Personaje equilibrado, ideal para resistir ataques y causar daño constante.",
-            attacks = listOf(
-                AttackMove("Golpe de energía", 20, "Ataque básico con energía digital."),
-                AttackMove("Corte del núcleo", 30, "Ataque fuerte contra el enemigo."),
-                AttackMove("Impacto defensivo", 16, "Ataque seguro de daño moderado.")
-            )
-        ),
-        BattleCharacter(
-            id = 2,
-            name = "Luna",
-            role = "Hechicera de datos",
-            maxHp = 100,
-            attackBonus = 11,
-            description = "Personaje rápido y ofensivo. Tiene menos vida, pero sus ataques son más fuertes.",
-            attacks = listOf(
-                AttackMove("Rayo binario", 24, "Descarga mágica de código puro."),
-                AttackMove("Pulso de datos", 34, "Ataque poderoso que altera al rival."),
-                AttackMove("Chispa digital", 18, "Ataque rápido y preciso.")
-            )
-        ),
-        BattleCharacter(
-            id = 3,
-            name = "Rex",
-            role = "Tanque de la arena",
-            maxHp = 150,
-            attackBonus = 3,
-            description = "Personaje defensivo. Tiene mucha vida, aunque su daño es más bajo.",
-            attacks = listOf(
-                AttackMove("Puño blindado", 18, "Golpe pesado con armadura digital."),
-                AttackMove("Carga frontal", 26, "Ataque físico directo."),
-                AttackMove("Contraataque", 20, "Movimiento estable y resistente.")
-            )
-        )
-    )
-}
 
-fun getStoryChapters(): List<StoryChapter> {
-    val glitchBasic = BattleCharacter(
-        id = 101,
-        name = "Glitch menor",
-        role = "Error corrupto del sistema",
-        maxHp = 95,
-        attackBonus = 4,
-        description = "Criatura digital nacida de una falla menor del núcleo.",
-        attacks = listOf(
-            AttackMove("Ruido digital", 15, "Ataque inestable de baja potencia."),
-            AttackMove("Código roto", 22, "Golpe corrupto contra el jugador."),
-            AttackMove("Pantalla azul", 18, "Ataque inesperado del sistema.")
-        )
-    )
 
-    val glitchAdvanced = BattleCharacter(
-        id = 102,
-        name = "Glitch avanzado",
-        role = "Amenaza adaptativa",
-        maxHp = 125,
-        attackBonus = 7,
-        description = "Enemigo que aprende de los movimientos del jugador.",
-        attacks = listOf(
-            AttackMove("Error crítico", 24, "Ataque fuerte al sistema del jugador."),
-            AttackMove("Fragmento corrupto", 28, "Daño directo con energía oscura."),
-            AttackMove("Reinicio forzado", 20, "Ataque rápido de interrupción.")
-        )
-    )
-
-    val glitchSupreme = BattleCharacter(
-        id = 103,
-        name = "Glitch Supremo",
-        role = "Jefe final del núcleo",
-        maxHp = 160,
-        attackBonus = 9,
-        description = "La forma más peligrosa de la corrupción digital.",
-        attacks = listOf(
-            AttackMove("Colapso del núcleo", 30, "Ataque devastador de energía corrupta."),
-            AttackMove("Tormenta de bugs", 26, "Ataque múltiple contra el jugador."),
-            AttackMove("Virus final", 34, "Ataque poderoso del jefe final.")
-        )
-    )
-
-    return listOf(
-        StoryChapter(
-            id = 1,
-            title = "Capítulo 1: El despertar del núcleo",
-            description = "El sistema Battle.io ha sido atacado por criaturas Glitch. Tu misión es entrar a la arena, elegir un campeón y recuperar el primer fragmento del núcleo.",
-            enemy = glitchBasic,
-            rewardCoins = 250,
-            rewardXp = 120
-        ),
-        StoryChapter(
-            id = 2,
-            title = "Capítulo 2: La arena corrupta",
-            description = "Después de la primera victoria, la arena empieza a cambiar sus reglas. Los enemigos ahora reconocen tus movimientos y atacan con más fuerza.",
-            enemy = glitchAdvanced,
-            rewardCoins = 400,
-            rewardXp = 180
-        ),
-        StoryChapter(
-            id = 3,
-            title = "Capítulo 3: El fragmento final",
-            description = "El núcleo está cerca de ser restaurado, pero el Glitch Supremo aparece como la última defensa del sistema corrupto.",
-            enemy = glitchSupreme,
-            rewardCoins = 700,
-            rewardXp = 300
-        )
-    )
-}
 @Composable
-fun FighterCard(title: String, character: BattleCharacter, currentHp: Int, barColor: Color) {
-    val hpPercent = if (character.maxHp == 0) 0f else currentHp.toFloat() / character.maxHp.toFloat()
+fun FighterCardHero(title: String, character: Hero, currentHp: Int, barColor: Color) {
+    val hpPercent = if (character.HpStat == 0) 0f else currentHp.toFloat() / character.HpStat.toFloat()
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -287,7 +176,44 @@ fun FighterCard(title: String, character: BattleCharacter, currentHp: Int, barCo
             )
             Text(text = character.role, color = Color(0xFF5F5F7A))
             Text(
-                text = "Vida: $currentHp / ${character.maxHp}",
+                text = "Vida: $currentHp / ${character.HpStat}",
+                fontWeight = FontWeight.SemiBold
+            )
+            LinearProgressIndicator(
+                progress = { hpPercent.coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(50.dp)),
+                color = barColor,
+                trackColor = Color(0xFFE0E0E0)
+            )
+        }
+    }
+}
+@Composable
+fun FighterCardEnemy(title: String, character: Enemy, currentHp: Int, barColor: Color) {
+    val hpPercent = if (character.HpStat == 0) 0f else currentHp.toFloat() / character.HpStat.toFloat()
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(text = title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text(
+                text = character.name,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text(text = character.role, color = Color(0xFF5F5F7A))
+            Text(
+                text = "Vida: $currentHp / ${character.HpStat}",
                 fontWeight = FontWeight.SemiBold
             )
             LinearProgressIndicator(
@@ -324,7 +250,124 @@ fun AttackButton(attack: AttackMove, onAttack: () -> Unit) {
                 Text(text = attack.description, color = Color(0xFF5F5F7A))
             }
             Spacer(modifier = Modifier.width(10.dp))
-            Text(text = "${attack.damage} daño", fontWeight = FontWeight.Bold, color = Color(0xFFE63946))
+            Text(
+                text = "${attack.basedamage} daño",
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFE63946)
+            )
         }
     }
 }
+
+    fun calcularDaño(
+        ataque: AttackMove,
+        attackStat: Int,
+        defenseStat: Int
+    ): Int {
+        // multiplicador por ataque del personaje
+        val multiplicador = 1.0 + (attackStat * 0.01)
+
+        // daño inicial con multiplicador
+        val rawDamage = ataque.basedamage * multiplicador
+
+        // aplicar lowroll / highroll (ejemplo: ±10%)
+        val rollFactor = Random.nextDouble(0.9, 1.1)
+        var damage = rawDamage * rollFactor
+
+        // aplicar defensa escalonada
+        var defensaReducida = 0.0
+        when {
+            defenseStat <= 60 -> {
+                defensaReducida = defenseStat.toDouble()
+            }
+
+            defenseStat <= 80 -> {
+                defensaReducida = 60.0 + (defenseStat - 60) * 0.5
+            }
+
+            else -> {
+                defensaReducida = 60.0 + (20 * 0.5) + (defenseStat - 80) * 0.2
+            }
+        }
+
+        damage -= defensaReducida
+
+        // nunca menos de 0
+        return damage.coerceAtLeast(0.0).toInt()
+    }
+
+    fun GetListOfAttacks(): List<AttackMove> {
+        return listOf(
+            AttackMove(
+                id = 1, name = "Golpe", basedamage = 16, accuracy = 0.8, type = "Fisico",
+                description = "Ataque básico con tus puños"
+            ),
+            AttackMove(
+                id = 2, name = "Corte", basedamage = 20, accuracy = 0.6, type = "Fisico",
+                description = "Ataque Cortante contra el enemigo"
+            ),
+            AttackMove(
+                id = 3, name = "Cabezazo", basedamage = 10, accuracy = 0.9, type = "Fisico",
+                description = "Ataque basico con tu cabeza"
+            ),
+            AttackMove(
+                id = 4, name = "Patada", basedamage = 18, accuracy = 0.7, type = "Físico",
+                description = "Ataque físico con tus piernas"
+            ),
+            AttackMove(
+                id = 5, name = "Lanzamiento", basedamage = 22, accuracy = 0.5, type = "Físico",
+                description = "Ataque físico que lanza al enemigo por los aires"
+            ),
+            AttackMove(
+                id = 6, name = "Rayo de energía", basedamage = 24, accuracy = 0.6, type = "Mágico",
+                description = "Descarga mágica de código puro."
+            ),
+            AttackMove(
+                id = 7, name = "Bola de fuego", basedamage = 34, accuracy = 0.4, type = "Mágico",
+                description = "Ataque poderoso que altera al rival."
+            ),
+            AttackMove(
+                id = 8, name = "Chispa", basedamage = 18, accuracy = 0.8, type = "Mágico",
+                description = "Ataque rápido y preciso."
+
+            )
+        )
+    }
+
+fun getAttacksByIds(vararg ids: Int): List<AttackMove> {
+    val attacks = GetListOfAttacks()
+    return ids.map { id -> attacks.find { it.id == id } }
+        .filterNotNull()
+}
+
+fun getStoryChapters(): List<StoryChapter> {
+    val enemies = GetEnemies()
+    return listOf(
+        StoryChapter(
+            id = 1,
+            title = "Capítulo 1: ",
+            description = "",
+            enemy = enemies[0],
+            rewardCoins = 100,
+            rewardXp = 50
+        ),
+        StoryChapter(
+            id = 2,
+            title = "Capítulo 1.1: ",
+            description = "",
+            enemy = enemies[1],
+            rewardCoins = 150,
+            rewardXp = 75
+        ),
+        StoryChapter(
+            id = 3,
+            title = "Capítulo 3: ",
+            description = "",
+            enemy = enemies[2],
+            rewardCoins = 200,
+            rewardXp = 100
+        )
+    )
+}
+
+

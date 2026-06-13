@@ -16,26 +16,46 @@ data class MatchHistory(
     val resultKey: String,
     val score: String
 )
-data class BattleCharacter(
+data class Hero(
     val id: Int,
+    val level: Int,
+    val experience: Int,
     val name: String,
     val role: String,
-    val maxHp: Int,
-    val attackBonus: Int,
+    val HpStat: Int,
+    val attackStat: Int,
+    val defenseStat: Int,
+    val luckStat: Int,
     val description: String,
-    val attacks: List<AttackMove>
+    val attacks: List<Int>
+)
+
+data class Enemy(
+    val id: Int,
+    val level: Int,
+    val name: String,
+    val role: String,
+    val HpStat: Int,
+    val attackStat: Int,
+    val defenseStat: Int,
+    val luckStat: Int,
+    val description: String,
+    val attacks: List<Int>
 )
 
 data class StoryChapter(
     val id: Int,
     val title: String,
     val description: String,
-    val enemy: BattleCharacter,
+    val enemy: Enemy,
     val rewardCoins: Int,
     val rewardXp: Int
 )
 data class AttackMove(
+    val id : Int,
     val name: String,
-    val damage: Int,
+    val basedamage: Int,
+    val accuracy: Double,
+    val type: String,
     val description: String
 )

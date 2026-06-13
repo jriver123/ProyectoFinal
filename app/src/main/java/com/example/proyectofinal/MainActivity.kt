@@ -76,6 +76,7 @@ import com.example.proyectofinal.viewmodel.UsuarioViewModel
 import kotlinx.coroutines.launch
 import kotlin.jvm.java
 import com.example.proyectofinal.data.repository.*
+import com.example.proyectofinal.viewmodel.BattleViewModel
 import com.example.proyectofinal.viewmodel.UsuarioViewModelFactory
 
 class MainActivity : ComponentActivity() {
@@ -357,41 +358,31 @@ fun BattleIoApp() {
                     )
                 }
                 composable("battle/{characterId}") { backStackEntry ->
-                    val characterId = backStackEntry.arguments?.getString("characterId")?.toIntOrNull()
+                    val characterId =
+                        backStackEntry.arguments?.getString("characterId")?.toIntOrNull()
                     val characters = getPlayableCharacters()
-                    val player = characters.firstOrNull { it.id == characterId } ?: characters.first()
-                    val chapter = getStoryChapters().first() // puedes usar el progreso real del usuario
+                    val player =
+                        characters.firstOrNull { it.id == characterId } ?: characters.first()
+                    val chapter = getStoryChapters().first()
                     val enemy = chapter.enemy
 
-                    var playerHp by rememberSaveable { mutableStateOf(player.maxHp) }
-                    var enemyHp by rememberSaveable { mutableStateOf(enemy.maxHp) }
-                    var battleMessage by rememberSaveable { mutableStateOf("¡El combate comienza!") }
-                    var battleFinished by rememberSaveable { mutableStateOf(false) }
+                    val viewModel: BattleViewModel = viewModel()
+
+                    LaunchedEffect(Unit) {
+                        viewModel.iniciarCombate(player, enemy)
+                    }
 
                     BattleScreen(
                         player = player,
                         enemy = enemy,
                         chapter = chapter,
-                        playerHp = playerHp,
-                        enemyHp = enemyHp,
-                        battleMessage = battleMessage,
-                        battleFinished = battleFinished,
-                        onAttack = { attack ->
-                            // Lógica simple de combate
-                            enemyHp -= attack.damage + player.attackBonus
-                            battleMessage = "Usaste ${attack.name} y causaste ${attack.damage} de daño."
-                            if (enemyHp <= 0) {
-                                battleMessage = "¡Has derrotado al enemigo!"
-                                battleFinished = true
-                            }
-                        },
+                        playerHp = viewModel.playerHp,
+                        enemyHp = viewModel.enemyHp,
+                        battleMessage = viewModel.battleMessage,
+                        battleFinished = viewModel.battleFinished,
+                        onAttack = { attack -> viewModel.atacar(player, enemy, attack) },
                         onExit = { navController.navigate("matches") },
-                        onRetry = {
-                            playerHp = player.maxHp
-                            enemyHp = enemy.maxHp
-                            battleMessage = "¡El combate comienza de nuevo!"
-                            battleFinished = false
-                        }
+                        onRetry = { viewModel.reiniciar(player, enemy) }
                     )
                 }
             }
@@ -441,7 +432,7 @@ fun StoryProgressCard(storyProgress: Int, onGoToStory: () -> Unit) {
                 style = MaterialTheme.typography.titleLarge
             )
             Text(
-                text = "Capítulo $storyProgress de 3: recupera los fragmentos del núcleo venciendo enemigos por turnos.",
+                text = "Capítulo $storyProgress de 3",
                 color = Color.White.copy(alpha = 0.9f)
             )
             LinearProgressIndicator(

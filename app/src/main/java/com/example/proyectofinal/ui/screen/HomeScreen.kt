@@ -64,7 +64,7 @@ fun HomeScreen(
                 color = Color(0xFF3A0CA3)
             )
             Text(
-                text = "Fragmentos del Núcleo",
+                text = "Luchas sin parar",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color(0xFF5F5F7A)
             )

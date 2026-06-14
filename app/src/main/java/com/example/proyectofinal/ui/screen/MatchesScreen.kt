@@ -95,7 +95,8 @@ fun MatchesScreen(
                         color = Color(0xFF3A0CA3)
                     )
                     Text(
-                        text = "Capítulo actual: ${usuario.storyProgress} de 3. Entra a la arena, elige tu personaje y pelea por turnos contra los Glitches.",
+                        text = "Capítulo actual: ${usuario.storyProgress} de 3. Elige uno de tus personajes para adentrarte en esta aventura, " +
+                                "te han invitado a un club de peleas con Avatares, el famoso Battle.io. Ahora ve con todo y arrasa a la competencia! ",
                         color = Color(0xFF5F5F7A)
                     )
                     Button(

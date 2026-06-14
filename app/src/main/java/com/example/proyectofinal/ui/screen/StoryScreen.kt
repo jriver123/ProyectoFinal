@@ -46,7 +46,7 @@ fun StoryScreen(
                 color = Color(0xFF3A0CA3)
             )
             Text(
-                text = "Battle.io: Fragmentos del Núcleo",
+                text = "Battle.io: Luchas sin parar ",
                 color = Color(0xFF5F5F7A)
             )
         }
@@ -73,10 +73,15 @@ fun StoryScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color(0xFF34344A)
                     )
-                    Text(
-                        text = "Enemigo: ${chapter.enemy.name}",
-                        fontWeight = FontWeight.Bold
-                    )
+
+                    // Aquí iteras sobre todos los enemigos del capítulo
+                    chapter.enemies.forEach { enemy ->
+                        Text(
+                            text = "Enemigo: ${enemy.name}",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
                     Text(
                         text = "Recompensa: ${chapter.rewardCoins} monedas • ${chapter.rewardXp} XP",
                         color = Color(0xFF00A896),
@@ -85,6 +90,7 @@ fun StoryScreen(
                 }
             }
         }
+
 
         item {
             Card(
@@ -97,12 +103,13 @@ fun StoryScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "Sinopsis general",
+                        text = "Combate numero 1",
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF3A0CA3)
                     )
                     Text(
-                        text = "",// Aquí podrías agregar una sinopsis general de la historia
+                        text = "Tu primer combate! Elige bien a tu Avatar y destruye el Avatar de tu contricante"+
+                        " para ganar la partida. ¡Buena suerte!",// Aquí podrías agregar una sinopsis general de la historia
                         color = Color(0xFF34344A)
                     )
                 }

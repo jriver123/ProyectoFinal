@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlin.math.pow
 import kotlin.random.Random
 
 
@@ -228,73 +229,40 @@ fun FighterCardEnemy(title: String, character: Enemy, currentHp: Int, barColor: 
         }
     }
 }
-@Composable
-fun AttackButton(attack: AttackMove, onAttack: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onAttack),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = attack.name, fontWeight = FontWeight.Bold, color = Color(0xFF3A0CA3))
-                Text(text = attack.description, color = Color(0xFF5F5F7A))
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = "${attack.basedamage} daño",
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFE63946)
-            )
-        }
+
+
+fun levelUP(hero: Hero) {
+    hero.level += 1
+    hero.nextLevelXP = calcularXpRequerida(hero.level)
+    hero.HpStat += 20   // aumenta vida máxima
+    hero.attackStat += 5   // aumenta ataque base
+    println("${hero.name} ha subido a nivel ${hero.level}!")
+}
+
+
+fun giveXP(hero: Hero, xpGanado: Int) {
+    hero.currentXP += xpGanado
+    while (hero.currentXP >= hero.nextLevelXP && hero.level < 40) {
+        hero.currentXP -= hero.nextLevelXP
+        levelUP(hero)
+    }
+}
+fun enemigoDerrotado(hero: Hero, enemy: Enemy) {
+    val xpGanado = enemy.rewardXp
+    giveXP(hero, xpGanado)
+}
+fun calcularXpRequerida(level: Int, xpBase: Int = 100): Int {
+    return when {
+        level < 20 -> xpBase * (2.0.pow(level - 1)).toInt() // doble cada nivel hasta 20
+        level in 20..40 -> xpBase * (2.0.pow(19)).toInt() + ((level - 20) * (xpBase / 2))
+        else -> xpBase * (2.0.pow(19)).toInt() + (20 * (xpBase / 2)) // fijo después de 40
     }
 }
 
-    fun calcularDaño(
-        ataque: AttackMove,
-        attackStat: Int,
-        defenseStat: Int
-    ): Int {
-        // multiplicador por ataque del personaje
-        val multiplicador = 1.0 + (attackStat * 0.01)
 
-        // daño inicial con multiplicador
-        val rawDamage = ataque.basedamage * multiplicador
 
-        // aplicar lowroll / highroll (ejemplo: ±10%)
-        val rollFactor = Random.nextDouble(0.9, 1.1)
-        var damage = rawDamage * rollFactor
 
-        // aplicar defensa escalonada
-        var defensaReducida = 0.0
-        when {
-            defenseStat <= 60 -> {
-                defensaReducida = defenseStat.toDouble()
-            }
 
-            defenseStat <= 80 -> {
-                defensaReducida = 60.0 + (defenseStat - 60) * 0.5
-            }
-
-            else -> {
-                defensaReducida = 60.0 + (20 * 0.5) + (defenseStat - 80) * 0.2
-            }
-        }
-
-        damage -= defensaReducida
-
-        // nunca menos de 0
-        return damage.coerceAtLeast(0.0).toInt()
-    }
 
     fun GetListOfAttacks(): List<AttackMove> {
         return listOf(
@@ -347,7 +315,7 @@ fun getStoryChapters(): List<StoryChapter> {
             id = 1,
             title = "Capítulo 1: ",
             description = "",
-            enemy = enemies[0],
+            enemies = listOf(enemies[0]),
             rewardCoins = 100,
             rewardXp = 50
         ),
@@ -355,7 +323,7 @@ fun getStoryChapters(): List<StoryChapter> {
             id = 2,
             title = "Capítulo 1.1: ",
             description = "",
-            enemy = enemies[1],
+            enemies = listOf(enemies[0]),
             rewardCoins = 150,
             rewardXp = 75
         ),
@@ -363,11 +331,12 @@ fun getStoryChapters(): List<StoryChapter> {
             id = 3,
             title = "Capítulo 3: ",
             description = "",
-            enemy = enemies[2],
+            enemies = listOf(enemies[0]),
             rewardCoins = 200,
             rewardXp = 100
         )
     )
+
 }
 
 

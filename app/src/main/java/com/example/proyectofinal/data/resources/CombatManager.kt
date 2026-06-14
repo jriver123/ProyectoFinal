@@ -42,4 +42,6 @@ class CombatManager {
         val mensaje = "${atacante.name} usa ${ataque.name} y causa $danio de daño"
         return Pair(danio, mensaje)
     }
+
+
 }

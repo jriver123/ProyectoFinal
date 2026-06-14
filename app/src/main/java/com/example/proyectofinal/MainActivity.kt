@@ -364,25 +364,26 @@ fun BattleIoApp() {
                     val player =
                         characters.firstOrNull { it.id == characterId } ?: characters.first()
                     val chapter = getStoryChapters().first()
-                    val enemy = chapter.enemy
+                    val enemies = chapter.enemies
 
                     val viewModel: BattleViewModel = viewModel()
 
                     LaunchedEffect(Unit) {
-                        viewModel.iniciarCombate(player, enemy)
+                        viewModel.iniciarCombate(player, enemies)
                     }
 
                     BattleScreen(
                         player = player,
-                        enemy = enemy,
+                        enemigos = enemies,
                         chapter = chapter,
+                        isPlayerTurn = viewModel.isPlayerTurn,
                         playerHp = viewModel.playerHp,
-                        enemyHp = viewModel.enemyHp,
+                        enemyHpMap = viewModel.enemyHpMap,
                         battleMessage = viewModel.battleMessage,
                         battleFinished = viewModel.battleFinished,
-                        onAttack = { attack -> viewModel.atacar(player, enemy, attack) },
+                        onAttack = { attack, targetId -> viewModel.atacar(player, enemies, targetId, ataque = attack) },
                         onExit = { navController.navigate("matches") },
-                        onRetry = { viewModel.reiniciar(player, enemy) }
+                        onRetry = { viewModel.reiniciar(player, enemies) }
                     )
                 }
             }

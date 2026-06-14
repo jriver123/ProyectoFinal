@@ -18,16 +18,17 @@ data class MatchHistory(
 )
 data class Hero(
     val id: Int,
-    val level: Int,
-    val experience: Int,
+    var level: Int = 1,
+    var currentXP: Int = 0,
+    var nextLevelXP: Int = 100,
     val name: String,
     val role: String,
-    val HpStat: Int,
-    val attackStat: Int,
-    val defenseStat: Int,
-    val luckStat: Int,
+    var HpStat: Int,
+    var attackStat: Int,
+    var defenseStat: Int,
+    var luckStat: Int,
     val description: String,
-    val attacks: List<Int>
+    var attacks: List<Int>
 )
 
 data class Enemy(
@@ -35,6 +36,7 @@ data class Enemy(
     val level: Int,
     val name: String,
     val role: String,
+    val rewardXp: Int,
     val HpStat: Int,
     val attackStat: Int,
     val defenseStat: Int,
@@ -47,7 +49,7 @@ data class StoryChapter(
     val id: Int,
     val title: String,
     val description: String,
-    val enemy: Enemy,
+    val enemies: List<Enemy>,
     val rewardCoins: Int,
     val rewardXp: Int
 )

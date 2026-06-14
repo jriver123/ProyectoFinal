@@ -47,7 +47,7 @@ fun CharacterSelectionScreen(
                 color = Color(0xFF3A0CA3)
             )
             Text(
-                text = "Cada personaje tiene vida, bonus de ataque y habilidades diferentes.",
+                text = "Cada personaje tiene nivel, vida, ataque y habilidades diferentes.",
                 color = Color(0xFF5F5F7A)
             )
         }
@@ -60,9 +60,7 @@ fun CharacterSelectionScreen(
                 shape = RoundedCornerShape(24.dp),
                 border = if (selectedCharacterId == character.id) {
                     BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-                } else {
-                    null
-                },
+                } else null,
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
@@ -82,15 +80,22 @@ fun CharacterSelectionScreen(
                         color = Color(0xFF00A896)
                     )
                     Text(text = character.description)
+
+                    // 🔹 Nivel y stats
                     Text(
-                        text = "Vida: ${character.HpStat} | Bonus ataque: +${character.attackStat}",
-                        fontWeight = FontWeight.Bold
+                        text = "Nivel: ${character.level}",
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF3A0CA3)
                     )
                     Text(
-                        text = "Ataques: ${
-                            getAttacksByIds(*character.attacks.toIntArray())
-                                .joinToString { it.name }
-                        }",
+                        text = "Vida: ${character.HpStat} | Ataque: ${character.attackStat}",
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    // 🔹 Lista de ataques
+                    val attackMoves = getAttacksByIds(*character.attacks.toIntArray())
+                    Text(
+                        text = "Ataques: ${attackMoves.joinToString { it.name }}",
                         color = Color(0xFF5F5F7A)
                     )
                 }

@@ -2,6 +2,8 @@ package com.example.proyectofinal.data.remote
 
 import com.example.proyectofinal.data.model.LoginRequest
 import com.example.proyectofinal.data.model.LoginResponse
+import com.example.proyectofinal.data.model.RegistroPartidaRequest
+import com.example.proyectofinal.data.model.UsuarioRequest
 import com.example.proyectofinal.data.model.UsuarioUI
 import retrofit2.Response
 import retrofit2.http.*
@@ -20,10 +22,16 @@ interface UsuarioApi {
 	suspend fun getUsuarioById(@Path("id") id: Long): Response<UsuarioUI>
 
 	@POST("usuarios")
-	suspend fun createUsuario(@Body usuario: UsuarioUI): Response<UsuarioUI>
+	suspend fun createUsuario(@Body usuario: UsuarioRequest): Response<UsuarioUI>
 
 	@PUT("usuarios/{id}")
-	suspend fun updateUsuario(@Path("id") id: Long, @Body usuario: UsuarioUI): Response<UsuarioUI>
+	suspend fun updateUsuario(@Path("id") id: Long, @Body usuario: UsuarioRequest): Response<UsuarioUI>
+
+	@PATCH("usuarios/{id}/estadisticas")
+	suspend fun registrarEstadisticasPartida(
+		@Path("id") id: Long,
+		@Body request: RegistroPartidaRequest
+	): Response<UsuarioUI>
 
 	@DELETE("usuarios/{id}")
 	suspend fun deleteUsuario(@Path("id") id: Long): Response<Unit>

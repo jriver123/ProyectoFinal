@@ -1,80 +1,140 @@
 package com.example.proyectofinal.viewmodel
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.example.proyectofinal.data.resources.AttackMove
+import com.example.proyectofinal.data.resources.BattleEngine
+import com.example.proyectofinal.data.resources.BattleEngineState
 import com.example.proyectofinal.data.resources.CombatManager
 import com.example.proyectofinal.data.resources.Enemy
 import com.example.proyectofinal.data.resources.Hero
 import com.example.proyectofinal.data.resources.getAttacksByIds
-import androidx.compose.runtime.mutableStateMapOf
+import com.example.proyectofinal.data.resources.getUnlockableAttacksForHero
 import com.example.proyectofinal.data.resources.giveXP
 
-class BattleViewModel : ViewModel() {
-    private val combatManager = CombatManager()
+class BattleViewModel(
+    private val combatManager: CombatManager = CombatManager(),
+    private val battleEngine: BattleEngine = BattleEngine()
+) : ViewModel() {
 
     var playerHp by mutableStateOf(0)
     var enemyHpMap = mutableStateMapOf<Int, Int>() // HP por enemigo
     var battleMessage by mutableStateOf("¡El combate comienza!")
     var battleFinished by mutableStateOf(false)
     var isPlayerTurn by mutableStateOf(true)
+    var pendingSkillChoices by mutableStateOf<List<AttackMove>>(emptyList())
+    var requiresSkillSelection by mutableStateOf(false)
+    var playerWon by mutableStateOf(false)
+    var userRewardRegistered by mutableStateOf(false)
+
+    private var engineState: BattleEngineState? = null
+
+    private fun applyState(newState: BattleEngineState) {
+        engineState = newState
+        playerHp = newState.playerHp
+        enemyHpMap.clear()
+        enemyHpMap.putAll(newState.enemyHpMap)
+        battleMessage = newState.battleMessage
+        battleFinished = newState.battleFinished
+        isPlayerTurn = newState.isPlayerTurn
+    }
 
     fun iniciarCombate(player: Hero, enemigos: List<Enemy>) {
-        playerHp = player.HpStat
-        enemyHpMap.clear()
-        enemigos.forEach { enemyHpMap[it.id] = it.HpStat }
-        battleMessage = "¡El combate comienza!"
-        battleFinished = false
-        isPlayerTurn = true
+        applyState(battleEngine.startBattle(player, enemigos))
+        pendingSkillChoices = emptyList()
+        requiresSkillSelection = false
+        playerWon = false
+        userRewardRegistered = false
     }
 
     fun atacar(player: Hero, enemigos: List<Enemy>, targetId: Int, ataque: AttackMove) {
-        if (!isPlayerTurn || battleFinished) return
+        val currentState = engineState ?: return
+        if (!currentState.isPlayerTurn || currentState.battleFinished || requiresSkillSelection) return
 
         val enemy = enemigos.firstOrNull { it.id == targetId } ?: return
-        val (danio, mensaje) = combatManager.realizarAtaque(ataque, atacante = player, defensor = enemy)
+        val (danio, mensaje) = combatManager.realizarAtaqueJugador(ataque, atacante = player, defensor = enemy)
 
-        enemyHpMap[targetId] = (enemyHpMap[targetId]!! - danio).coerceAtLeast(0)
-        battleMessage = mensaje
+        val playerOutcome = battleEngine.applyPlayerAttack(
+            current = currentState,
+            enemy = enemy,
+            damage = danio,
+            actionMessage = mensaje
+        )
+        applyState(playerOutcome.state)
 
-        if (enemyHpMap[targetId]!! <= 0) {
-            battleMessage = "¡Has derrotado a ${enemy.name}!"
-
-            // 🔹 Otorgar XP al héroe al derrotar enemigo
+        if (playerOutcome.defeatedEnemyId != null) {
+            val previousLevel = player.level
             giveXP(player, enemy.rewardXp)
 
-            if (enemyHpMap.values.all { it == 0 }) {
-                battleFinished = true
-                battleMessage = "¡Has derrotado a todos los enemigos!"
-                return
+            if (player.level > previousLevel) {
+                pendingSkillChoices = getUnlockableAttacksForHero(player).take(3)
+                requiresSkillSelection = pendingSkillChoices.isNotEmpty()
+                if (requiresSkillSelection) {
+                    battleMessage = "${player.name} subio a nivel ${player.level}. Elige una habilidad nueva."
+                }
             }
         }
 
-        isPlayerTurn = false
+        if (playerOutcome.allEnemiesDefeated || playerOutcome.state.battleFinished) {
+            playerWon = true
+            return
+        }
+
+        if (requiresSkillSelection) {
+            return
+        }
+
         enemyTurn(player, enemigos)
     }
 
-    private fun enemyTurn(player: Hero, enemigos: List<Enemy>) {
-        if (battleFinished) return
+    fun seleccionarNuevaHabilidad(player: Hero, attackId: Int) {
+        if (!requiresSkillSelection) return
 
-        val enemigosVivos = enemigos.filter { enemyHpMap[it.id]!! > 0 }
-        for (enemigo in enemigosVivos) {
-            val ataque = getAttacksByIds(*enemigo.attacks.toIntArray()).random()
-            val (danio, mensaje) = combatManager.realizarAtaque(ataque, atacante = player, defensor = enemigo)
-
-            playerHp = (playerHp - danio).coerceAtLeast(0)
-            battleMessage = mensaje
-
-            if (playerHp <= 0) {
-                battleMessage = "¡Has sido derrotado!"
-                battleFinished = true
-                return
+        val skill = pendingSkillChoices.firstOrNull { it.id == attackId } ?: return
+        if (skill.id !in player.attacks) {
+            if (player.attacks.size >= 4) {
+                player.attacks = player.attacks.drop(1) + skill.id
+            } else {
+                player.attacks = player.attacks + skill.id
             }
         }
 
-        isPlayerTurn = true
+        requiresSkillSelection = false
+        pendingSkillChoices = emptyList()
+        battleMessage = "${player.name} aprendio ${skill.name}."
+    }
+
+    private fun enemyTurn(player: Hero, enemigos: List<Enemy>) {
+        val currentState = engineState ?: return
+        if (currentState.battleFinished) return
+
+        val enemigosVivos = enemigos.filter { (currentState.enemyHpMap[it.id] ?: 0) > 0 }
+        var stateInTurn = currentState
+
+        for (enemigo in enemigosVivos) {
+            val ataque = getAttacksByIds(*enemigo.attacks.toIntArray()).random()
+            val (danio, mensaje) = combatManager.realizarAtaqueEnemigo(ataque, atacante = enemigo, defensor = player)
+
+            val enemyOutcome = battleEngine.applyEnemyAttack(
+                current = stateInTurn,
+                damage = danio,
+                actionMessage = mensaje
+            )
+            applyState(enemyOutcome.state)
+            stateInTurn = enemyOutcome.state
+
+            if (enemyOutcome.playerDefeated || stateInTurn.battleFinished) {
+                playerWon = false
+                return
+            }
+        }
+    }
+
+    fun registrarRecompensaUsuario() {
+        userRewardRegistered = true
     }
 
     fun reiniciar(player: Hero, enemigos: List<Enemy>) {

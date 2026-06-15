@@ -25,6 +25,7 @@ import androidx.navigation.NavController
 import com.example.proyectofinal.data.model.UsuarioUI
 import com.example.proyectofinal.data.resources.GamePack
 import com.example.proyectofinal.data.resources.t
+import com.example.proyectofinal.ui.navigation.AppRoutes
 
 
 @Composable
@@ -92,7 +93,7 @@ fun StoreScreen(
             Button(
                 onClick = {
                     onPurchase()
-                    navController.navigate("home") // ✅ vuelve al Home después de la compra
+                    navController.navigate(AppRoutes.Home)
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp)

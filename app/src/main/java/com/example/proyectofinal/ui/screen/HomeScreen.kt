@@ -31,11 +31,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.proyectofinal.StatCard
-import com.example.proyectofinal.StoryProgressCard
 import com.example.proyectofinal.data.model.UsuarioUI
 import com.example.proyectofinal.data.resources.t
-import com.example.proyectofinal.rememberImageBitmap
+import com.example.proyectofinal.ui.components.StatCard
+import com.example.proyectofinal.ui.components.StoryProgressCard
+import com.example.proyectofinal.ui.components.rememberImageBitmap
 
 
 @Composable

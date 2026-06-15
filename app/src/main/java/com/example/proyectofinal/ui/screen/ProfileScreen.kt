@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.proyectofinal.data.model.UsuarioUI
 import com.example.proyectofinal.data.resources.t
-import com.example.proyectofinal.rememberImageBitmap
+import com.example.proyectofinal.ui.navigation.AppRoutes
 
 
 @Composable
@@ -50,8 +50,6 @@ fun ProfileScreen(
     language: String,
     navController: NavController,
     isLoadingUsuario: Boolean,
-    apiMessage: String?,
-    apiError: String?,
     onNombreChange: (String) -> Unit,
     onCorreoChange: (String) -> Unit,
     onBioChange: (String) -> Unit,
@@ -138,8 +136,6 @@ fun ProfileScreen(
                     if (isLoadingUsuario) {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                     }
-                    apiMessage?.let { Text(it, color = Color(0xFF00A896)) }
-                    apiError?.let { Text(it, color = Color(0xFFE63946)) }
 
                     OutlinedButton(
                         onClick = onRefreshUsuario,
@@ -165,7 +161,7 @@ fun ProfileScreen(
                         singleLine = true
                     )
                     OutlinedTextField(
-                        value = usuario.password ?: "",
+                        value = usuario.password,
                         onValueChange = onPasswordChange,
                         label = { Text("Contraseña") },
                         modifier = Modifier.fillMaxWidth(),
@@ -199,8 +195,8 @@ fun ProfileScreen(
                     OutlinedButton(
                         onClick = {
                             onLogout()
-                            navController.navigate("login") {
-                                popUpTo("home") { inclusive = true }
+                            navController.navigate(AppRoutes.Login) {
+                                popUpTo(AppRoutes.Home) { inclusive = true }
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),

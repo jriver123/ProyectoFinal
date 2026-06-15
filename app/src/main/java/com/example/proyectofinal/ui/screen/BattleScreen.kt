@@ -40,7 +40,10 @@ fun BattleScreen(
     battleMessage: String,
     battleFinished: Boolean,
     isPlayerTurn: Boolean,
+    requiresSkillSelection: Boolean,
+    pendingSkillChoices: List<AttackMove>,
     onAttack: (AttackMove, Int) -> Unit,
+    onSelectSkill: (Int) -> Unit,
     onExit: () -> Unit,
     onRetry: () -> Unit
 ) {
@@ -107,8 +110,24 @@ fun BattleScreen(
             }
         }
 
+        if (!battleFinished && requiresSkillSelection) {
+            item {
+                Text("Elige una nueva habilidad", fontWeight = FontWeight.Bold, color = Color(0xFF3A8CA3))
+            }
+
+            items(pendingSkillChoices) { skill ->
+                OutlinedButton(
+                    onClick = { onSelectSkill(skill.id) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp)
+                ) {
+                    Text("Aprender ${skill.name}")
+                }
+            }
+        }
+
         // Lista de ataques SIEMPRE visible
-        if (!battleFinished && isPlayerTurn) {
+        if (!battleFinished && isPlayerTurn && !requiresSkillSelection) {
             item {
                 Text("Elige un ataque", fontWeight = FontWeight.Bold, color = Color(0xFF3A8CA3))
             }

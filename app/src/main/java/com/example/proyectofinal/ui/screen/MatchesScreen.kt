@@ -22,10 +22,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.proyectofinal.StatCard
 import com.example.proyectofinal.data.model.UsuarioUI
 import com.example.proyectofinal.data.resources.MatchHistory
 import com.example.proyectofinal.data.resources.t
+import com.example.proyectofinal.ui.components.StatCard
 
 
 @Composable

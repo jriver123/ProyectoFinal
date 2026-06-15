@@ -158,6 +158,7 @@ fun t(language: String, key: String): String {
 @Composable
 fun FighterCardHero(title: String, character: Hero, currentHp: Int, barColor: Color) {
     val hpPercent = if (character.HpStat == 0) 0f else currentHp.toFloat() / character.HpStat.toFloat()
+    val xpPercent = if (character.nextLevelXP == 0) 0f else character.currentXP.toFloat() / character.nextLevelXP.toFloat()
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -177,6 +178,11 @@ fun FighterCardHero(title: String, character: Hero, currentHp: Int, barColor: Co
             )
             Text(text = character.role, color = Color(0xFF5F5F7A))
             Text(
+                text = "Nivel ${character.level}",
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF3A0CA3)
+            )
+            Text(
                 text = "Vida: $currentHp / ${character.HpStat}",
                 fontWeight = FontWeight.SemiBold
             )
@@ -187,6 +193,19 @@ fun FighterCardHero(title: String, character: Hero, currentHp: Int, barColor: Co
                     .height(12.dp)
                     .clip(RoundedCornerShape(50.dp)),
                 color = barColor,
+                trackColor = Color(0xFFE0E0E0)
+            )
+            Text(
+                text = "XP: ${character.currentXP} / ${character.nextLevelXP}",
+                fontWeight = FontWeight.SemiBold
+            )
+            LinearProgressIndicator(
+                progress = { xpPercent.coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(50.dp)),
+                color = Color(0xFF00A896),
                 trackColor = Color(0xFFE0E0E0)
             )
         }
@@ -234,8 +253,9 @@ fun FighterCardEnemy(title: String, character: Enemy, currentHp: Int, barColor: 
 fun levelUP(hero: Hero) {
     hero.level += 1
     hero.nextLevelXP = calcularXpRequerida(hero.level)
-    hero.HpStat += 20   // aumenta vida máxima
-    hero.attackStat += 5   // aumenta ataque base
+    hero.HpStat += 12
+    hero.attackStat += 3
+    hero.defenseStat += 2
     println("${hero.name} ha subido a nivel ${hero.level}!")
 }
 
@@ -252,11 +272,14 @@ fun enemigoDerrotado(hero: Hero, enemy: Enemy) {
     giveXP(hero, xpGanado)
 }
 fun calcularXpRequerida(level: Int, xpBase: Int = 100): Int {
-    return when {
-        level < 20 -> xpBase * (2.0.pow(level - 1)).toInt() // doble cada nivel hasta 20
-        level in 20..40 -> xpBase * (2.0.pow(19)).toInt() + ((level - 20) * (xpBase / 2))
-        else -> xpBase * (2.0.pow(19)).toInt() + (20 * (xpBase / 2)) // fijo después de 40
-    }
+    val cappedLevel = level.coerceIn(1, 40)
+    return xpBase + ((cappedLevel - 1) * 40)
+}
+
+fun getUnlockableAttacksForHero(hero: Hero): List<AttackMove> {
+    val allAttacks = GetListOfAttacks()
+    val owned = hero.attacks.toSet()
+    return allAttacks.filter { it.id !in owned }
 }
 
 

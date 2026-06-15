@@ -18,10 +18,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.proyectofinal.OptionChip
-import com.example.proyectofinal.SettingsCard
 import com.example.proyectofinal.data.model.UsuarioUI
 import com.example.proyectofinal.data.resources.t
+import com.example.proyectofinal.ui.components.OptionChip
+import com.example.proyectofinal.ui.components.SettingsCard
+import com.example.proyectofinal.ui.navigation.AppRoutes
 import kotlin.math.roundToInt
 
 @Composable
@@ -103,7 +104,7 @@ fun SettingsScreen(
         // ✅ Botón para volver al Home usando NavController
         item {
             Button(
-                onClick = { navController.navigate("home") },
+                onClick = { navController.navigate(AppRoutes.Home) },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Volver al inicio")

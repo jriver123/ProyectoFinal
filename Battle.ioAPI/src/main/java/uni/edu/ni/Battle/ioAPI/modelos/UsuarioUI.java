@@ -43,9 +43,11 @@ public class UsuarioUI {
     @Min(0)
     @Column(name = "played_matches", nullable = false)
     private Integer played_matches;
+    @Min(0)
+    @Column(name = "exp", nullable = false)
+    private Integer exp;
     @Min(1)
     @Column(name = "story_progress", nullable = false)
     private Integer storyProgress;
 
 }
-

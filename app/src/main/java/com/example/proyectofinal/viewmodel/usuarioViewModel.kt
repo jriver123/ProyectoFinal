@@ -56,10 +56,22 @@ class UsuarioViewModel(
 
 	// 🔹 Login
 	fun login(email: String, password: String, onResult: (UsuarioUI?) -> Unit = {}) {
+		val normalizedEmail = email.trim()
+		val normalizedPassword = password.trim()
+		if (normalizedEmail.isBlank() || normalizedPassword.isBlank()) {
+			_uiState.value = _uiState.value.copy(
+				isLoading = false,
+				message = null,
+				errorMessage = "Ingresa correo y contraseña"
+			)
+			onResult(null)
+			return
+		}
+
 		viewModelScope.launch {
 			beginRequest()
 			runCatching<LoginResponse> {
-				repository.login(LoginRequest(email, password))
+				repository.login(LoginRequest(normalizedEmail, normalizedPassword))
 			}.onSuccess { response ->
 				val usuarioUI = UsuarioUI(
 					id = response.id,
@@ -72,7 +84,7 @@ class UsuarioViewModel(
 					partidasJugadas = 0,
 					storyProgress = 0,
 					exp = 0,
-					password = password
+					password = normalizedPassword
 				)
 
 				// Guardar en Room

@@ -1,14 +1,14 @@
 package com.example.proyectofinal.data.resources
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -20,10 +20,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import kotlin.math.pow
-import kotlin.random.Random
+import androidx.compose.foundation.Image
 
 
 fun normalizeLanguage(language: String?): String {
@@ -156,95 +156,138 @@ fun t(language: String, key: String): String {
 
 
 @Composable
-fun FighterCardHero(title: String, character: Hero, currentHp: Int, barColor: Color) {
+fun FighterCardHero(
+    title: String,
+    character: Hero,
+    currentHp: Int,
+    barColor: Color,
+    modifier: Modifier = Modifier
+) {
     val hpPercent = if (character.HpStat == 0) 0f else currentHp.toFloat() / character.HpStat.toFloat()
     val xpPercent = if (character.nextLevelXP == 0) 0f else character.currentXP.toFloat() / character.nextLevelXP.toFloat()
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Text(
-                text = character.name,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Text(text = character.role, color = Color(0xFF5F5F7A))
-            Text(
-                text = "Nivel ${character.level}",
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF3A0CA3)
-            )
-            Text(
-                text = "Vida: $currentHp / ${character.HpStat}",
-                fontWeight = FontWeight.SemiBold
-            )
-            LinearProgressIndicator(
-                progress = { hpPercent.coerceIn(0f, 1f) },
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(12.dp)
-                    .clip(RoundedCornerShape(50.dp)),
-                color = barColor,
-                trackColor = Color(0xFFE0E0E0)
-            )
-            Text(
-                text = "XP: ${character.currentXP} / ${character.nextLevelXP}",
-                fontWeight = FontWeight.SemiBold
-            )
-            LinearProgressIndicator(
-                progress = { xpPercent.coerceIn(0f, 1f) },
+                    .size(84.dp)
+                    .border(
+                        width = 3.dp,
+                        color = Color(0xFF0BA896),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .clip(RoundedCornerShape(12.dp))
+            ) {
+                if (character.imageResId != 0) {
+                    Image(
+                        painter = painterResource(id = character.imageResId),
+                        contentDescription = "${character.name} portrait",
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(50.dp)),
-                color = Color(0xFF00A896),
-                trackColor = Color(0xFFE0E0E0)
-            )
+                    .weight(1f)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(text = "Vida: $currentHp / ${character.HpStat}", fontWeight = FontWeight.SemiBold)
+                LinearProgressIndicator(
+                    progress = { hpPercent.coerceIn(0f, 1f) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(50.dp)),
+                    color = barColor,
+                    trackColor = Color(0xFFE0E0E0)
+                )
+
+                Text(text = "XP: ${character.currentXP} / ${character.nextLevelXP}", fontWeight = FontWeight.SemiBold)
+                LinearProgressIndicator(
+                    progress = { xpPercent.coerceIn(0f, 1f) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(50.dp)),
+                    color = Color(0xFF00A896),
+                    trackColor = Color(0xFFE0E0E0)
+                )
+            }
         }
     }
 }
 @Composable
-fun FighterCardEnemy(title: String, character: Enemy, currentHp: Int, barColor: Color) {
+fun FighterCardEnemy(
+    title: String,
+    character: Enemy,
+    currentHp: Int,
+    barColor: Color,
+    modifier: Modifier = Modifier
+) {
     val hpPercent = if (character.HpStat == 0) 0f else currentHp.toFloat() / character.HpStat.toFloat()
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Text(
-                text = character.name,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Text(text = character.role, color = Color(0xFF5F5F7A))
-            Text(
-                text = "Vida: $currentHp / ${character.HpStat}",
-                fontWeight = FontWeight.SemiBold
-            )
-            LinearProgressIndicator(
-                progress = { hpPercent.coerceIn(0f, 1f) },
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(12.dp)
-                    .clip(RoundedCornerShape(50.dp)),
-                color = barColor,
-                trackColor = Color(0xFFE0E0E0)
-            )
+                    .size(84.dp)
+                    .border(
+                        width = 3.dp,
+                        color = Color(0xFFE63946),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .clip(RoundedCornerShape(12.dp))
+            ) {
+                if (character.imageResId != 0) {
+                    Image(
+                        painter = painterResource(id = character.imageResId),
+                        contentDescription = "${character.name} portrait",
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(text = "Vida: $currentHp / ${character.HpStat}", fontWeight = FontWeight.SemiBold)
+                LinearProgressIndicator(
+                    progress = { hpPercent.coerceIn(0f, 1f) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(50.dp)),
+                    color = barColor,
+                    trackColor = Color(0xFFE0E0E0)
+                )
+            }
         }
     }
 }
@@ -298,7 +341,7 @@ fun getUnlockableAttacksForHero(hero: Hero): List<AttackMove> {
                 description = "Ataque Cortante contra el enemigo"
             ),
             AttackMove(
-                id = 3, name = "Cabezazo", basedamage = 10, accuracy = 0.9, type = "Fisico",
+                id = 3, name = "Cabezazo", basedamage = 15, accuracy = 0.9, type = "Fisico",
                 description = "Ataque basico con tu cabeza"
             ),
             AttackMove(
@@ -314,7 +357,7 @@ fun getUnlockableAttacksForHero(hero: Hero): List<AttackMove> {
                 description = "Descarga mágica de código puro."
             ),
             AttackMove(
-                id = 7, name = "Bola de fuego", basedamage = 34, accuracy = 0.4, type = "Mágico",
+                id = 7, name = "Bola de fuego", basedamage = 19, accuracy = 0.8, type = "Mágico",
                 description = "Ataque poderoso que altera al rival."
             ),
             AttackMove(

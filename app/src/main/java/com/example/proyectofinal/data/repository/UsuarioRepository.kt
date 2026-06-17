@@ -32,9 +32,48 @@ class UsuarioRepository(
     throw Exception("$errorMessage: ${response.code()}")
   }
 
+  private fun requireLoginBody(response: Response<LoginResponse>): LoginResponse {
+    if (response.isSuccessful) {
+      return response.body() ?: throw Exception("Respuesta de login vacia")
+    }
+    throw Exception("Error al iniciar sesion: ${response.code()}")
+  }
+
+  private fun errorDetail(responseCode: Int, label: String): String {
+    return "$label ($responseCode)"
+  }
+
     // 🔹 Login
     suspend fun login(request: LoginRequest): LoginResponse {
-        return api.login(request)
+      val normalizedEmail = request.email.trim()
+      val normalizedPassword = request.password.trim()
+
+      val primaryResponse = api.login(
+        LoginRequest(
+          email = normalizedEmail,
+          password = normalizedPassword
+        )
+      )
+
+      if (primaryResponse.isSuccessful) {
+        return requireLoginBody(primaryResponse)
+      }
+
+      // Fallbacks para backends con nombres de campos distintos en el endpoint /login.
+      val fallbackPayloads = listOf(
+        mapOf("correo" to normalizedEmail, "password" to normalizedPassword),
+        mapOf("correo" to normalizedEmail, "contrasena" to normalizedPassword),
+        mapOf("username" to normalizedEmail, "password" to normalizedPassword)
+      )
+
+      for (payload in fallbackPayloads) {
+        val fallbackResponse = api.loginWithMap(payload)
+        if (fallbackResponse.isSuccessful) {
+          return requireLoginBody(fallbackResponse)
+        }
+      }
+
+      throw Exception(errorDetail(primaryResponse.code(), "Credenciales invalidas o contrato de login no compatible"))
     }
 
     // 🔹 Guardar usuario en Room
@@ -103,4 +142,3 @@ class UsuarioRepository(
         return response.isSuccessful
     }
 }
-

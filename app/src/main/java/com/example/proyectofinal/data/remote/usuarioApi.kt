@@ -12,7 +12,10 @@ import retrofit2.http.*
 interface UsuarioApi {
 	// Login
 	@POST("usuarios/login")
-	suspend fun login(@Body request: LoginRequest): LoginResponse
+	suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
+
+	@POST("usuarios/login")
+	suspend fun loginWithMap(@Body request: Map<String, String>): Response<LoginResponse>
 
 	// CRUD de usuarios
 	@GET("usuarios")

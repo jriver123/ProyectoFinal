@@ -1,7 +1,9 @@
 package com.example.proyectofinal.data.resources
 
+import com.example.proyectofinal.R
 
-    fun getPlayableCharacters(): List<Hero> {
+
+fun getPlayableCharacters(): List<Hero> {
 
     return listOf(
         Hero(
@@ -15,7 +17,8 @@ package com.example.proyectofinal.data.resources
             defenseStat = 8,
             luckStat = 5,
             description = "Personaje equilibrado, ideal para resistir ataques y causar daño constante.",
-            attacks = listOf(1)
+            attacks = listOf(1),
+            imageResId = R.drawable.hero_kael
         ),
         Hero(
             id = 2,
@@ -28,7 +31,8 @@ package com.example.proyectofinal.data.resources
             defenseStat = 5,
             luckStat = 7,
             description = "Personaje rápido y ofensivo. Tiene menos vida, pero sus ataques son más fuertes.",
-            attacks = listOf(7)
+            attacks = listOf(7),
+            imageResId = R.drawable.hero_luna
         ),
         Hero(
             id = 3,
@@ -37,18 +41,19 @@ package com.example.proyectofinal.data.resources
             currentXP = 0,
             role = "Tanque de la arena",
             HpStat = 150,
-            attackStat = 3,
-            defenseStat = 12,
+            attackStat = 6,
+            defenseStat = 10,
             luckStat = 4,
             description = "Personaje defensivo. Tiene mucha vida, aunque su daño es más bajo.",
-            attacks = listOf(3)
+            attacks = listOf(3),
+            imageResId = R.drawable.hero_rex
         )
     )
 }
 
     fun GetEnemies(): List<Enemy>{
 
-        return listOf(
+         return listOf(
             Enemy(
                 id = 1,
                 level = 1,
@@ -60,7 +65,8 @@ package com.example.proyectofinal.data.resources
                 defenseStat = 3,
                 luckStat = 2,
                 description = "No es muy fuerte, pero puede ser molesto en grupo.",
-                attacks = listOf(1)
+                attacks = listOf(1),
+                imageResId = R.drawable.zombie1
             ),
             Enemy(
                 id = 2,
@@ -73,7 +79,8 @@ package com.example.proyectofinal.data.resources
                 defenseStat = 8,
                 luckStat = 1,
                 description = "Es más debil que el zombie, pero también mas rapido.",
-                attacks = listOf(3)
+                attacks = listOf(3),
+                imageResId = R.drawable.slime1
             ),
             Enemy(
                 id = 3,
@@ -86,9 +93,10 @@ package com.example.proyectofinal.data.resources
                 defenseStat = 2,
                 luckStat = 1,
                 description = "Es un enemigo más fuerte, con mala defensa y ataques decentes.",
-                attacks = listOf(2)
+                attacks = listOf(2),
+                imageResId = R.drawable.skeleton1
             )
 
-        )
-    }
+         )
+     }
 

@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -19,6 +22,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +40,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.compose.foundation.border
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import com.example.proyectofinal.R
+import com.example.proyectofinal.data.resources.AttackMove
+import com.example.proyectofinal.data.resources.getAttackSkillArtResId
 
 @Composable
 fun StatCard(title: String, value: String, subtitle: String, modifier: Modifier = Modifier) {
@@ -171,4 +183,136 @@ fun rememberImageBitmap(profileImageUri: String?): ImageBitmap? {
     return imageBitmap
 }
 
+@Composable
+fun HeroPortraitFrame(
+    modifier: Modifier = Modifier,
+    imageResId: Int = 0,
+    characterName: String = "Hero"
+) {
+    Box(
+        modifier = modifier
+            .size(180.dp)
+            .border(
+                width = 4.dp,
+                color = Color(0xFF0BA896),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFFF0F9F8))
+    ) {
+        if (imageResId != 0) {
+            Image(
+                painter = painterResource(id = imageResId),
+                contentDescription = "$characterName portrait",
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            // Placeholder cuando no hay imagen
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = characterName,
+                    color = Color(0xFF5F5F7A),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun EnemyPortraitFrame(
+    modifier: Modifier = Modifier,
+    imageResId: Int = 0,
+    characterName: String = "Enemy"
+) {
+    Box(
+        modifier = modifier
+            .size(180.dp)
+            .border(
+                width = 4.dp,
+                color = Color(0xFFE63946),
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFFFBF0F0))
+    ) {
+        if (imageResId != 0) {
+            Image(
+                painter = painterResource(id = imageResId),
+                contentDescription = "$characterName portrait",
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            // Placeholder cuando no hay imagen
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = characterName,
+                    color = Color(0xFF5F5F7A),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun AttackCommandBar(
+    attacks: List<AttackMove>,
+    canUseAttacks: Boolean,
+    selectedEnemyName: String?,
+    onAttackClick: (AttackMove) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val attackSlots = List(4) { attacks.getOrNull(it) }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFAFAFA)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = if (selectedEnemyName == null) "Selecciona un enemigo" else "Objetivo: $selectedEnemyName",
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF3A0CA3)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                attackSlots.forEach { attack ->
+                    val artResId = attack?.let { getAttackSkillArtResId(it.id) } ?: R.drawable.sa_null
+                    val enabled = attack != null && canUseAttacks
+
+                    OutlinedButton(
+                        onClick = { if (attack != null) onAttackClick(attack) },
+                        enabled = enabled,
+                        modifier = Modifier.width(76.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = artResId),
+                            contentDescription = attack?.name ?: "Ataque vacio",
+                            modifier = Modifier.size(42.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
 

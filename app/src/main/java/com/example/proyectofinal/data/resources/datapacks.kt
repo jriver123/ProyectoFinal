@@ -28,7 +28,8 @@ data class Hero(
     var defenseStat: Int,
     var luckStat: Int,
     val description: String,
-    var attacks: List<Int>
+    var attacks: List<Int>,
+    val imageResId: Int = 0  // ID del recurso drawable para el portrait
 )
 
 data class Enemy(
@@ -42,7 +43,8 @@ data class Enemy(
     val defenseStat: Int,
     val luckStat: Int,
     val description: String,
-    val attacks: List<Int>
+    val attacks: List<Int>,
+    val imageResId: Int = 0  // ID del recurso drawable para el portrait
 )
 
 data class StoryChapter(

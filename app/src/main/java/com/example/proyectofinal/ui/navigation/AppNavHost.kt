@@ -34,6 +34,8 @@ import com.example.proyectofinal.data.repository.SettingsPreferences
 import com.example.proyectofinal.data.repository.SettingsRepository
 import com.example.proyectofinal.data.repository.UsuarioRepository
 import com.example.proyectofinal.data.resources.AppDefaults
+import com.example.proyectofinal.data.resources.BackgroundMusicPlayer
+import com.example.proyectofinal.data.resources.ScreenBgMusic
 import com.example.proyectofinal.data.resources.getPlayableCharacters
 import com.example.proyectofinal.data.resources.getStoryChapters
 import com.example.proyectofinal.data.resources.t
@@ -92,6 +94,10 @@ fun AppNavHost() {
 
     val usuarioActivo = usuarioUIState.usuarioActivo
 
+    LaunchedEffect(musicVolume) {
+        BackgroundMusicPlayer.setVolume(musicVolume / 100f)
+    }
+
     LaunchedEffect(Unit) {
         usuarioViewModel.verificarLoginAutomatico { usuarioGuardado ->
             if (usuarioGuardado != null) {
@@ -115,6 +121,46 @@ fun AppNavHost() {
         if (!feedback.isNullOrBlank()) {
             snackbarHostState.showSnackbar(feedback)
             usuarioViewModel.clearFeedback()
+        }
+    }
+
+    LaunchedEffect(currentRoute) {
+        when (currentRoute) {
+            AppRoutes.BattleWithArg -> {
+                // La música de batalla/derrota se controla dentro del composable de batalla.
+            }
+            AppRoutes.Home -> {
+                BackgroundMusicPlayer.playScreenMusic(context, ScreenBgMusic.Home)
+                // Volumen normal
+                BackgroundMusicPlayer.setVolume(musicVolume / 100f)
+            }
+            AppRoutes.Matches -> {
+                BackgroundMusicPlayer.playScreenMusic(context, ScreenBgMusic.Home)
+                BackgroundMusicPlayer.setVolume(musicVolume / 100f)
+            }
+            AppRoutes.Store -> {
+                BackgroundMusicPlayer.playScreenMusic(context, ScreenBgMusic.Store)
+                BackgroundMusicPlayer.setVolume(musicVolume / 100f)
+            }
+            AppRoutes.Profile -> {
+                BackgroundMusicPlayer.playScreenMusic(context, ScreenBgMusic.Profile)
+                BackgroundMusicPlayer.setVolume(musicVolume / 100f)
+            }
+            AppRoutes.Settings -> {
+                BackgroundMusicPlayer.playScreenMusic(context, ScreenBgMusic.Settings)
+                BackgroundMusicPlayer.setVolume(musicVolume / 100f)
+            }
+            AppRoutes.Story -> {
+                BackgroundMusicPlayer.playScreenMusic(context, ScreenBgMusic.Story)
+                BackgroundMusicPlayer.setVolume(musicVolume / 100f)
+            }
+            AppRoutes.Login -> {
+                BackgroundMusicPlayer.playScreenMusic(context, ScreenBgMusic.Login)
+                BackgroundMusicPlayer.setVolume(musicVolume / 100f)
+            }
+            else -> {
+                // Detener música en rutas desconocidas o transiciones
+            }
         }
     }
 
@@ -419,17 +465,31 @@ fun AppNavHost() {
                         }
                     }
 
+                    val battleMusicKey = when {
+                        battleViewModel.battleFinished && battleViewModel.playerWon -> ScreenBgMusic.Victory
+                        battleViewModel.battleFinished && !battleViewModel.playerWon -> ScreenBgMusic.Defeat
+                        else -> ScreenBgMusic.Battle
+                    }
+
+                    LaunchedEffect(battleMusicKey, musicVolume) {
+                        BackgroundMusicPlayer.playScreenMusic(context, battleMusicKey)
+                        BackgroundMusicPlayer.setVolume((musicVolume / 100f) * 0.7f)
+                    }
+
                     BattleScreen(
                         player = player,
                         enemigos = enemies,
                         chapter = chapter,
                         isPlayerTurn = battleViewModel.isPlayerTurn,
+                        isResolvingTurn = battleViewModel.isResolvingTurn,
                         playerHp = battleViewModel.playerHp,
                         enemyHpMap = battleViewModel.enemyHpMap,
                         battleMessage = battleViewModel.battleMessage,
                         battleFinished = battleViewModel.battleFinished,
                         requiresSkillSelection = battleViewModel.requiresSkillSelection,
                         pendingSkillChoices = battleViewModel.pendingSkillChoices,
+                        soundCue = battleViewModel.soundCue,
+                        onSoundConsumed = { battleViewModel.consumeSoundCue() },
                         onAttack = { attack, targetId ->
                             battleViewModel.atacar(player, enemies, targetId, ataque = attack)
                         },
@@ -444,5 +504,3 @@ fun AppNavHost() {
         }
     }
 }
-
-

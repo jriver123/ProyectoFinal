@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.proyectofinal.data.resources.MonitorAppLifecycle
 import com.example.proyectofinal.ui.navigation.AppNavHost
 import com.example.proyectofinal.ui.theme.BattleIoTheme
 
@@ -19,6 +21,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    val lifecycleOwner = LocalLifecycleOwner.current
+                    MonitorAppLifecycle(lifecycleOwner)
                     AppNavHost()
                 }
             }

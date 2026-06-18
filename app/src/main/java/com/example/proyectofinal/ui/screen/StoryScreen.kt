@@ -122,7 +122,7 @@ fun StoryScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp)
             ) {
-                Text("Elegir personaje")
+                Text("Avanzar al combate")
             }
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(

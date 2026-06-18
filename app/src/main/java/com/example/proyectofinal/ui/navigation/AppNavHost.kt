@@ -35,6 +35,7 @@ import com.example.proyectofinal.data.repository.SettingsRepository
 import com.example.proyectofinal.data.repository.UsuarioRepository
 import com.example.proyectofinal.data.resources.AppDefaults
 import com.example.proyectofinal.data.resources.BackgroundMusicPlayer
+import com.example.proyectofinal.data.resources.GetTranssStorySec
 import com.example.proyectofinal.data.resources.ScreenBgMusic
 import com.example.proyectofinal.data.resources.getPlayableCharacters
 import com.example.proyectofinal.data.resources.getStoryChapters
@@ -48,10 +49,12 @@ import com.example.proyectofinal.ui.screen.ProfileScreen
 import com.example.proyectofinal.ui.screen.SettingsScreen
 import com.example.proyectofinal.ui.screen.StoryScreen
 import com.example.proyectofinal.ui.screen.StoreScreen
+import com.example.proyectofinal.ui.screen.TransssStoryScreen
 import com.example.proyectofinal.viewmodel.BattleViewModel
 import com.example.proyectofinal.viewmodel.UsuarioViewModel
 import com.example.proyectofinal.viewmodel.UsuarioViewModelFactory
 import kotlinx.coroutines.launch
+
 
 @Composable
 fun AppNavHost() {
@@ -398,7 +401,7 @@ fun AppNavHost() {
                         StoryScreen(
                             storyProgress = storyUsuario.storyProgress,
                             onStart = {
-                                navController.navigate(AppRoutes.CharacterSelect)
+                                navController.navigate(AppRoutes.TranssStory)
                             },
                             onBack = {
                                 navController.navigate(AppRoutes.Matches) {
@@ -407,6 +410,37 @@ fun AppNavHost() {
                             },
                             onResetStory = {
                                 usuarioViewModel.resetStory(storyUsuario.id)
+                            }
+                        )
+                    } else {
+                        Text("No hay usuario activo")
+                    }
+                }
+                composable(AppRoutes.TranssStory) {
+                    val storyUiState by usuarioViewModel.uiState.collectAsState()
+                    val storyUsuario = storyUiState.usuarioActivo
+
+                    if (storyUsuario != null) {
+                        val chapters = getStoryChapters()
+                        val chapterId = chapters
+                            .firstOrNull { it.id == storyUsuario.storyProgress }
+                            ?.id ?: chapters.first().id
+
+                        val section = GetTranssStorySec(chapterId)
+                        val player = heroRoster.values.firstOrNull()
+                            ?: getPlayableCharacters().first()
+
+                        TransssStoryScreen(
+                            player = player,
+                            section = section,
+                            onOptionSelected = { _, _ ->
+                                navController.navigate(AppRoutes.CharacterSelect)
+                            },
+                            onContinue = {
+                                navController.navigate(AppRoutes.CharacterSelect)
+                            },
+                            onBack = {
+                                navController.popBackStack()
                             }
                         )
                     } else {
@@ -500,6 +534,7 @@ fun AppNavHost() {
                         onRetry = { battleViewModel.reiniciar(player, enemies) }
                     )
                 }
+
             }
         }
     }

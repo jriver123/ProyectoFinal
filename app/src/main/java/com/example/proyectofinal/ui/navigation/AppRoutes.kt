@@ -8,6 +8,7 @@ object AppRoutes {
     const val Profile = "profile"
     const val Settings = "settings"
     const val Story = "story"
+    const val TranssStory = "transs_story"
     const val CharacterSelect = "character_select"
 
     const val BattleBase = "battle"

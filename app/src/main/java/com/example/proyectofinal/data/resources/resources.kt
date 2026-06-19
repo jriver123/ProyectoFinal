@@ -13,7 +13,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -47,6 +46,19 @@ fun t(language: String, key: String): String {
         "nav_store" to "Tienda",
         "nav_profile" to "Perfil",
         "nav_settings" to "Config",
+        "login_logo" to "BattleIO",
+        "login_title" to "Iniciar Sesión",
+        "login_subtitle" to "Bienvenido de nuevo a su espacio seguro.",
+        "login_email" to "Correo Electrónico",
+        "login_password" to "Contraseña",
+        "login_button" to "Entrar",
+        "login_forgot" to "¿Olvidaste tu contraseña?",
+        "login_register_prompt" to "¿No tienes una cuenta?",
+        "login_register_action" to "Regístrate ahora",
+        "register_title" to "Crear cuenta",
+        "register_username" to "Nombre de usuario",
+        "register_description" to "Descripción",
+        "register_button" to "Registrarme",
         "profile_photo" to "Foto de perfil",
         "quick_actions" to "Acciones rápidas",
         "go_store" to "Ir a la tienda",
@@ -100,6 +112,19 @@ fun t(language: String, key: String): String {
         "nav_store" to "Store",
         "nav_profile" to "Profile",
         "nav_settings" to "Settings",
+        "login_logo" to "BattleIO",
+        "login_title" to "Sign In",
+        "login_subtitle" to "Welcome back to your secure space.",
+        "login_email" to "Email",
+        "login_password" to "Password",
+        "login_button" to "Enter",
+        "login_forgot" to "Forgot your password?",
+        "login_register_prompt" to "Don't have an account?",
+        "login_register_action" to "Register now",
+        "register_title" to "Create account",
+        "register_username" to "Username",
+        "register_description" to "Description",
+        "register_button" to "Register me",
         "profile_photo" to "Profile photo",
         "quick_actions" to "Quick actions",
         "go_store" to "Go to store",

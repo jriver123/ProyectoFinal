@@ -1,6 +1,5 @@
 package com.example.proyectofinal.ui.screen
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -12,16 +11,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,30 +32,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.example.proyectofinal.R
 import com.example.proyectofinal.data.model.UsuarioUI
 import com.example.proyectofinal.data.resources.t
 import com.example.proyectofinal.viewmodel.UsuarioViewModel
 
 @Composable
-fun LoginScreen(
+fun RegisterScreen(
     viewModel: UsuarioViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
     language: String = "es",
-    onLoginSuccess: (UsuarioUI) -> Unit,
-    onRegisterClick: () -> Unit = {}
+    onRegisterSuccess: (UsuarioUI) -> Unit,
+    onBackToLogin: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
+    var username by rememberSaveable { mutableStateOf("") }
     var correo by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
 
     val bgColor = Color(0xFFF7F4FF)
     val cardColor = Color.White
@@ -95,11 +93,11 @@ fun LoginScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 28.dp),
+                        .padding(horizontal = 20.dp, vertical = 22.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = t(language, "login_title"),
+                        text = t(language, "register_title"),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Black,
                         color = textColor
@@ -108,20 +106,12 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = t(language, "login_subtitle"),
+                        text = "Completa solo los datos necesarios para crear tu cuenta.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = hintColor
                     )
 
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    Image(
-                        painter = painterResource(id = R.drawable.login_icon),
-                        contentDescription = "BattleIO logo",
-                        modifier = Modifier.height(72.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(22.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -147,9 +137,41 @@ fun LoginScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = t(language, "register_username"),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF3F3F53)
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        TextField(
+                            value = username,
+                            onValueChange = { username = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            placeholder = { Text("Jugador123") },
+                            shape = RoundedCornerShape(14.dp),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = softFieldColor,
+                                unfocusedContainerColor = softFieldColor,
+                                disabledContainerColor = softFieldColor,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                cursorColor = primaryColor,
+                                focusedTextColor = textColor,
+                                unfocusedTextColor = textColor,
+                                focusedPlaceholderColor = hintColor,
+                                unfocusedPlaceholderColor = hintColor
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
                         Text(
                             text = t(language, "login_email"),
                             style = MaterialTheme.typography.titleMedium,
@@ -181,7 +203,7 @@ fun LoginScreen(
                             )
                         )
 
-                        Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
                         Text(
                             text = t(language, "login_password"),
@@ -199,7 +221,6 @@ fun LoginScreen(
                             singleLine = true,
                             placeholder = { Text("••••••••") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            visualTransformation = PasswordVisualTransformation(),
                             shape = RoundedCornerShape(14.dp),
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = softFieldColor,
@@ -215,14 +236,51 @@ fun LoginScreen(
                             )
                         )
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Text(
+                            text = t(language, "register_description"),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF3F3F53)
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        TextField(
+                            value = description,
+                            onValueChange = { description = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 3,
+                            placeholder = { Text("Cuéntanos sobre ti...") },
+                            shape = RoundedCornerShape(14.dp),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = softFieldColor,
+                                unfocusedContainerColor = softFieldColor,
+                                disabledContainerColor = softFieldColor,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                cursorColor = primaryColor,
+                                focusedTextColor = textColor,
+                                unfocusedTextColor = textColor,
+                                focusedPlaceholderColor = hintColor,
+                                unfocusedPlaceholderColor = hintColor
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         Button(
                             onClick = {
-                                viewModel.login(correo, password) { usuario ->
+                                viewModel.registrarNuevoUsuario(
+                                    username = username,
+                                    email = correo,
+                                    password = password,
+                                    description = description
+                                ) { usuario ->
                                     if (usuario != null) {
                                         viewModel.cargarUsuarioDetalles(usuario.id)
-                                        onLoginSuccess(usuario)
+                                        onRegisterSuccess(usuario)
                                     }
                                 }
                             },
@@ -238,7 +296,7 @@ fun LoginScreen(
                             )
                         ) {
                             Text(
-                                text = t(language, "login_button"),
+                                text = t(language, "register_button"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -249,21 +307,21 @@ fun LoginScreen(
                             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onRegisterClick() },
+                                .clickable { onBackToLogin() },
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = t(language, "login_register_prompt"),
+                                text = "¿Ya tienes una cuenta?",
                                 color = Color(0xFF3F3F53)
                             )
                             Text(
-                                text = " ${t(language, "login_register_action")}",
+                                text = " Volver al login",
                                 color = accentGreen,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -274,3 +332,4 @@ fun LoginScreen(
         }
     }
 }
+

@@ -150,6 +150,30 @@ class UsuarioViewModel(
 		}
 	}
 
+	fun registrarNuevoUsuario(
+		username: String,
+		email: String,
+		password: String,
+		description: String,
+		onResult: (UsuarioUI?) -> Unit = {}
+	) {
+		val nuevoUsuario = UsuarioUI(
+			id = 0,
+			username = username.trim(),
+			email = email.trim(),
+			description = description.trim(),
+			nivel = 1,
+			monedas = 100,
+			partidasGanadas = 0,
+			partidasJugadas = 0,
+			storyProgress = 1,
+			exp = 0,
+			password = password.trim()
+		)
+
+		registrarUsuario(nuevoUsuario, onResult)
+	}
+
 	// 🔹 Actualizar usuario
 	fun actualizarUsuario(id: Long, usuario: UsuarioUI, onResult: (UsuarioUI?) -> Unit = {}) {
 		viewModelScope.launch {

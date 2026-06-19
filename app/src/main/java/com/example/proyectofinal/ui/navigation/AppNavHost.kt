@@ -46,6 +46,7 @@ import com.example.proyectofinal.ui.screen.HomeScreen
 import com.example.proyectofinal.ui.screen.LoginScreen
 import com.example.proyectofinal.ui.screen.MatchesScreen
 import com.example.proyectofinal.ui.screen.ProfileScreen
+import com.example.proyectofinal.ui.screen.RegisterScreen
 import com.example.proyectofinal.ui.screen.SettingsScreen
 import com.example.proyectofinal.ui.screen.StoryScreen
 import com.example.proyectofinal.ui.screen.StoreScreen
@@ -255,7 +256,24 @@ fun AppNavHost() {
                                 popUpTo(AppRoutes.Login) { inclusive = true }
                                 launchSingleTop = true
                             }
+                        },
+                        onRegisterClick = {
+                            navController.navigate(AppRoutes.Register)
                         }
+                    )
+                }
+                composable(AppRoutes.Register) {
+                    RegisterScreen(
+                        viewModel = usuarioViewModel,
+                        language = selectedLanguage,
+                        onRegisterSuccess = { response ->
+                            usuarioViewModel.cargarUsuarioDetalles(response.id)
+                            navController.navigate(AppRoutes.Home) {
+                                popUpTo(AppRoutes.Login) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        onBackToLogin = { navController.popBackStack() }
                     )
                 }
                 composable(AppRoutes.Home) {

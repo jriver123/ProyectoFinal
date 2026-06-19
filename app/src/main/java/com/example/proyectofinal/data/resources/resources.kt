@@ -185,11 +185,13 @@ fun FighterCardHero(
     title: String,
     character: Hero,
     currentHp: Int,
+    currentXP: Int = character.currentXP,
+    nextLevelXP: Int = character.nextLevelXP,
     barColor: Color,
     modifier: Modifier = Modifier
 ) {
     val hpPercent = if (character.HpStat == 0) 0f else currentHp.toFloat() / character.HpStat.toFloat()
-    val xpPercent = if (character.nextLevelXP == 0) 0f else character.currentXP.toFloat() / character.nextLevelXP.toFloat()
+    val xpPercent = if (nextLevelXP == 0) 0f else currentXP.toFloat() / nextLevelXP.toFloat()
 
     Card(
         modifier = modifier,
@@ -240,7 +242,7 @@ fun FighterCardHero(
                     trackColor = Color(0xFFE0E0E0)
                 )
 
-                Text(text = "XP: ${character.currentXP} / ${character.nextLevelXP}", fontWeight = FontWeight.SemiBold)
+                Text(text = "XP: $currentXP / $nextLevelXP", fontWeight = FontWeight.SemiBold)
                 LinearProgressIndicator(
                     progress = { xpPercent.coerceIn(0f, 1f) },
                     modifier = Modifier

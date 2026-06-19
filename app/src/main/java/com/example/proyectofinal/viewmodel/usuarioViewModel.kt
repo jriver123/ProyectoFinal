@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import retrofit2.HttpException
 import java.io.IOException
 
@@ -78,11 +79,11 @@ class UsuarioViewModel(
 					username = response.nombre,
 					email = response.correo,
 					description = "",
-					nivel = 0,
+					nivel = 1,
 					monedas = 0,
 					partidasGanadas = 0,
 					partidasJugadas = 0,
-					storyProgress = 0,
+					storyProgress = 1,
 					exp = 0,
 					password = normalizedPassword
 				)
@@ -282,23 +283,32 @@ class UsuarioViewModel(
 	fun registrarResultadoPartida(
 		victoria: Boolean,
 		monedasGanadas: Int,
-		xpGanada: Int
+		xpGanada: Int,
+		onResult: (Boolean) -> Unit = {}
 	) {
 		val usuarioActual = _uiState.value.usuarioActivo ?: return
 
 		viewModelScope.launch {
 			beginRequest()
 			runCatching {
-				repository.registrarEstadisticasPartida(
+				println("🔵 DEBUG: Registrando partida")
+				println("🔵 DEBUG: Victoria = $victoria")
+				println("🔵 DEBUG: Usuario actual: victorias=${usuarioActual.partidasGanadas}, partidas=${usuarioActual.partidasJugadas}, monedas=${usuarioActual.monedas}, exp=${usuarioActual.exp}")
+
+				// Usar el método alternativo que actualiza el usuario completo
+				repository.actualizarEstadisticasUsuario(
 					id = usuarioActual.id,
-					request = RegistroPartidaRequest(
-						monedasGanadas = monedasGanadas,
-						victorias = if (victoria) 1 else 0,
-						partidasJugadas = 1,
-						expGanada = xpGanada
+					victoria = victoria,
+					monedasGanadas = monedasGanadas,
+					xpGanada = xpGanada,
+					usuarioActual = usuarioActual.copy(
+						nivel = usuarioActual.nivel.coerceAtLeast(1),
+						storyProgress = usuarioActual.storyProgress.coerceAtLeast(1)
 					)
 				)
 			}.onSuccess { usuarioActualizado ->
+				println("🔵 DEBUG: Estadísticas registradas exitosamente")
+				println("🔵 DEBUG: Usuario actualizado: victorias=${usuarioActualizado.partidasGanadas}, partidas=${usuarioActualizado.partidasJugadas}, monedas=${usuarioActualizado.monedas}, exp=${usuarioActualizado.exp}")
 				_uiState.value = _uiState.value.copy(
 					isLoading = false,
 					usuarioActivo = usuarioActualizado,
@@ -309,8 +319,17 @@ class UsuarioViewModel(
 					},
 					errorMessage = null
 				)
+				// Recargar datos del usuario del servidor para sincronizar
+				viewModelScope.launch {
+					delay(500)
+					cargarUsuarioDetalles(usuarioActual.id)
+				}
+				onResult(true)
 			}.onFailure { throwable ->
+				println("🔵 DEBUG: Error al registrar estadísticas: ${throwable.message}")
+				throwable.printStackTrace()
 				failRequest(throwable)
+				onResult(false)
 			}
 		}
 	}

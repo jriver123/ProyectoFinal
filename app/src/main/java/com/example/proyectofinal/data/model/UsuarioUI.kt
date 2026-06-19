@@ -11,11 +11,11 @@ data class UsuarioUI(
     val nivel: Int = 0,
     @SerializedName("coins")
     val monedas: Int = 0,
-    @SerializedName(value = "winned_matches", alternate = ["winnedMatches"])
+    @SerializedName("winned_matches")
     val partidasGanadas: Int = 0,
-    @SerializedName(value = "played_matches", alternate = ["playedMatches"])
+    @SerializedName("played_matches")
     val partidasJugadas: Int = 0,
-    @SerializedName(value = "story_progress", alternate = ["storyProgress"])
+    @SerializedName(value = "storyProgress", alternate = ["story_progress"])
     val storyProgress: Int = 0,
     @SerializedName("exp")
     val exp: Int = 0,
@@ -31,20 +31,24 @@ data class UsuarioRequest(
     val nivel: Int = 0,
     @SerializedName("coins")
     val monedas: Int = 0,
-    @SerializedName(value = "winned_matches", alternate = ["winnedMatches"])
+    @SerializedName("winned_matches")
     val partidasGanadas: Int = 0,
-    @SerializedName(value = "played_matches", alternate = ["playedMatches"])
+    @SerializedName("played_matches")
     val partidasJugadas: Int = 0,
-    @SerializedName(value = "story_progress", alternate = ["storyProgress"])
+    @SerializedName(value = "storyProgress", alternate = ["story_progress"])
     val storyProgress: Int = 0,
     @SerializedName("exp")
     val exp: Int = 0
 )
 
 data class RegistroPartidaRequest(
+    @SerializedName("coins_earned")
     val monedasGanadas: Int = 0,
+    @SerializedName(value = "winned_matches", alternate = ["wins", "victories"])
     val victorias: Int = 0,
+    @SerializedName(value = "played_matches", alternate = ["matches_played"])
     val partidasJugadas: Int = 1,
+    @SerializedName("exp_earned")
     val expGanada: Int = 0
 )
 

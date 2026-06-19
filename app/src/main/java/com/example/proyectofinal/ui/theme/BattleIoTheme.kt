@@ -12,7 +12,7 @@ fun BattleIoTheme(content: @Composable () -> Unit) {
         secondary = Color(0xFF00A896),
         tertiary = Color(0xFFFFB703),
         background = Color(0xFFF7F4FF),
-        surface = Color.White,
+        surface = Color(0xFFF7F4FF),
         onPrimary = Color.White,
         onSecondary = Color.White,
         onSurface = Color(0xFF1F1F2E)

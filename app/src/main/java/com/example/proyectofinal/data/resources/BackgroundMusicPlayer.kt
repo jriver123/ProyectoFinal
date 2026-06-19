@@ -22,9 +22,14 @@ object ScreenBgMusic {
 }
 
 private val screenMusicMap: Map<String, Int> = mapOf(
-    ScreenBgMusic.Battle to R.raw.battle_screen_bg,
+    ScreenBgMusic.Battle to R.raw.battle_bg,
     ScreenBgMusic.Defeat to R.raw.defeat_sound,
-    ScreenBgMusic.Victory to R.raw.victory_sound
+    ScreenBgMusic.Victory to R.raw.victory_sound,
+    ScreenBgMusic.Login to R.raw.login_bg,
+    ScreenBgMusic.Home to R.raw.main_bg,
+    ScreenBgMusic.Store to R.raw.main_bg,
+    ScreenBgMusic.Profile to R.raw.main_bg,
+    ScreenBgMusic.Settings to R.raw.main_bg,
     // Agregar más pantallas aquí: ScreenBgMusic.Home to R.raw.home_bg, etc.
 )
 
@@ -35,20 +40,23 @@ private val screenMusicMap: Map<String, Int> = mapOf(
 object BackgroundMusicPlayer {
     private var currentMediaPlayer: MediaPlayer? = null
     private var currentScreen: String? = null
+    private var currentMusicRes: Int? = null
 
     fun playScreenMusic(context: Context, screenKey: String) {
         val soundRes = screenMusicMap[screenKey]
 
-        // Si ya es la misma pista, no reiniciar para evitar cortes de audio.
-        if (currentScreen == screenKey && currentMediaPlayer != null) {
+        // Si ya es la misma pista de audio, no reiniciar para evitar cortes de audio.
+        if (currentMusicRes == soundRes && currentMediaPlayer != null) {
             if (currentMediaPlayer?.isPlaying == false) {
                 currentMediaPlayer?.start()
             }
+            currentScreen = screenKey
+            Log.d("BgMusicPlayer", "Continuando con la misma música para pantalla: $screenKey")
             return
         }
 
-        // Detener música anterior si estamos cambiando de pantalla
-        if (currentScreen != screenKey) {
+        // Detener música anterior si estamos cambiando de pista
+        if (currentMusicRes != soundRes) {
             stopMusic()
         }
 
@@ -68,6 +76,7 @@ object BackgroundMusicPlayer {
             }
             it.start()
             currentScreen = screenKey
+            currentMusicRes = soundRes
             Log.d("BgMusicPlayer", "Reproduciendo música para pantalla: $screenKey")
         } ?: run {
             Log.e("BgMusicPlayer", "No se pudo crear MediaPlayer para $screenKey")
@@ -87,6 +96,7 @@ object BackgroundMusicPlayer {
         }
         currentMediaPlayer = null
         currentScreen = null
+        currentMusicRes = null
         Log.d("BgMusicPlayer", "Música detenida")
     }
 

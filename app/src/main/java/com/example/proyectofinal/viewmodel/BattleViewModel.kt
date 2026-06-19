@@ -26,6 +26,10 @@ class BattleViewModel(
 ) : ViewModel() {
 
     var playerHp by mutableStateOf(0)
+    var playerXP by mutableStateOf(0)
+    var playerNextLevelXP by mutableStateOf(100)
+    var playerLevel by mutableStateOf(1)
+    var playerAttacks by mutableStateOf<List<Int>>(emptyList())
     var enemyHpMap = mutableStateMapOf<Int, Int>()
     var battleMessage by mutableStateOf("¡El combate comienza!")
     var battleFinished by mutableStateOf(false)
@@ -34,6 +38,7 @@ class BattleViewModel(
     var pendingSkillChoices by mutableStateOf<List<AttackMove>>(emptyList())
     var requiresSkillSelection by mutableStateOf(false)
     var playerWon by mutableStateOf(false)
+    var battleResultResolved by mutableStateOf(false)
     var userRewardRegistered by mutableStateOf(false)
     var soundCue by mutableStateOf<BattleSoundCue?>(null)
 
@@ -63,12 +68,21 @@ class BattleViewModel(
 
     fun iniciarCombate(player: Hero, enemigos: List<Enemy>) {
         applyState(battleEngine.startBattle(player, enemigos))
+        syncPlayerStats(player)
         pendingSkillChoices = emptyList()
         requiresSkillSelection = false
         playerWon = false
+        battleResultResolved = false
         userRewardRegistered = false
         isResolvingTurn = false
         soundCue = null
+    }
+
+    private fun syncPlayerStats(player: Hero) {
+        playerXP = player.currentXP
+        playerNextLevelXP = player.nextLevelXP
+        playerLevel = player.level
+        playerAttacks = player.attacks.toList()
     }
 
     fun atacar(player: Hero, enemigos: List<Enemy>, targetId: Int, ataque: AttackMove) {
@@ -116,6 +130,7 @@ class BattleViewModel(
         if (playerOutcome.defeatedEnemyId != null) {
             val previousLevel = player.level
             giveXP(player, enemy.rewardXp)
+            syncPlayerStats(player)
 
             if (player.level > previousLevel) {
                 pendingSkillChoices = getUnlockableAttacksForHero(player).take(3)
@@ -128,6 +143,7 @@ class BattleViewModel(
 
         if (playerOutcome.allEnemiesDefeated || playerOutcome.state.battleFinished) {
             playerWon = true
+            battleResultResolved = true
             return
         }
 
@@ -153,6 +169,7 @@ class BattleViewModel(
         requiresSkillSelection = false
         pendingSkillChoices = emptyList()
         battleMessage = "${player.name} aprendio ${skill.name}."
+        syncPlayerStats(player)
     }
 
     private suspend fun enemyTurn(player: Hero, enemigos: List<Enemy>) {
@@ -188,6 +205,7 @@ class BattleViewModel(
 
             if (enemyOutcome.playerDefeated || stateInTurn.battleFinished) {
                 playerWon = false
+                battleResultResolved = true
                 return
             }
         }

@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -65,9 +65,15 @@ fun AppNavHost() {
         context,
         AppDatabase::class.java,
         "app_database"
-    ).build()
+    )
+        .addMigrations(AppDatabase.MIGRATION_1_2)
+        .build()
     val settingsRepository = remember { SettingsRepository(context.applicationContext) }
-    val repository = UsuarioRepository(RetrofitClient.usuarioApi, db.usuarioLoginDao())
+    val repository = UsuarioRepository(
+        RetrofitClient.usuarioApi,
+        db.usuarioLoginDao(),
+        db.heroProgressDao()
+    )
     val usuarioViewModel: UsuarioViewModel = viewModel(
         factory = UsuarioViewModelFactory(repository)
     )
@@ -168,8 +174,16 @@ fun AppNavHost() {
         }
     }
 
+    LaunchedEffect(usuarioActivo?.id) {
+        val userId = usuarioActivo?.id ?: return@LaunchedEffect
+        val mergedHeroes = repository.loadHeroProgress(userId, heroRoster.values)
+        mergedHeroes.forEach { loadedHero ->
+            heroRoster[loadedHero.id] = loadedHero
+        }
+    }
+
     Scaffold(
-        contentWindowInsets = WindowInsets.safeDrawing,
+        contentWindowInsets = WindowInsets.navigationBars,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (showBottomBar) NavigationBar {
@@ -486,7 +500,10 @@ fun AppNavHost() {
                     val characterId = backStackEntry.arguments?.getString("characterId")?.toIntOrNull()
                     val characters = heroRoster.values.toList()
                     val player = characters.firstOrNull { it.id == characterId } ?: characters.first()
-                    val chapter = getStoryChapters().first()
+                    val battleStoryProgress = usuarioUIState.usuarioActivo?.storyProgress ?: 1
+                    val allChapters = getStoryChapters()
+                    val chapter = allChapters.firstOrNull { it.id == battleStoryProgress }
+                        ?: allChapters.first()
                     val enemies = chapter.enemies
 
                     val battleViewModel: BattleViewModel = viewModel()
@@ -495,8 +512,16 @@ fun AppNavHost() {
                         battleViewModel.iniciarCombate(player, enemies)
                     }
 
-                    LaunchedEffect(battleViewModel.battleFinished, battleViewModel.userRewardRegistered) {
-                        if (battleViewModel.battleFinished && !battleViewModel.userRewardRegistered) {
+                    LaunchedEffect(
+                        battleViewModel.battleFinished,
+                        battleViewModel.battleResultResolved,
+                        battleViewModel.userRewardRegistered
+                    ) {
+                        if (
+                            battleViewModel.battleFinished &&
+                            battleViewModel.battleResultResolved &&
+                            !battleViewModel.userRewardRegistered
+                        ) {
                             val userCoins = if (battleViewModel.playerWon) {
                                 (chapter.rewardCoins / 4).coerceAtLeast(15)
                             } else {
@@ -511,9 +536,18 @@ fun AppNavHost() {
                             usuarioViewModel.registrarResultadoPartida(
                                 victoria = battleViewModel.playerWon,
                                 monedasGanadas = userCoins,
-                                xpGanada = userXp
+                                xpGanada = userXp,
+                                onResult = { registrado ->
+                                    usuarioActivo?.id?.let { userId ->
+                                        scope.launch {
+                                            repository.saveHeroProgress(userId, player)
+                                        }
+                                    }
+                                    if (registrado) {
+                                        battleViewModel.registrarRecompensaUsuario()
+                                    }
+                                }
                             )
-                            battleViewModel.registrarRecompensaUsuario()
                         }
                     }
 
@@ -535,6 +569,10 @@ fun AppNavHost() {
                         isPlayerTurn = battleViewModel.isPlayerTurn,
                         isResolvingTurn = battleViewModel.isResolvingTurn,
                         playerHp = battleViewModel.playerHp,
+                        playerXP = battleViewModel.playerXP,
+                        playerNextLevelXP = battleViewModel.playerNextLevelXP,
+                        playerLevel = battleViewModel.playerLevel,
+                        playerAttackIds = battleViewModel.playerAttacks,
                         enemyHpMap = battleViewModel.enemyHpMap,
                         battleMessage = battleViewModel.battleMessage,
                         battleFinished = battleViewModel.battleFinished,

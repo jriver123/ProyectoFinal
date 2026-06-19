@@ -44,6 +44,10 @@ fun BattleScreen(
     enemigos: List<Enemy>,
     chapter: StoryChapter,
     playerHp: Int,
+    playerXP: Int,
+    playerNextLevelXP: Int,
+    playerLevel: Int,
+    playerAttackIds: List<Int>,
     enemyHpMap: Map<Int, Int>,
     battleMessage: String,
     battleFinished: Boolean,
@@ -58,7 +62,7 @@ fun BattleScreen(
     onExit: () -> Unit,
     onRetry: () -> Unit
 ) {
-    val playerAttacks = remember { getAttacksByIds(*player.attacks.toIntArray()) }
+    val playerAttacks = remember(playerAttackIds) { getAttacksByIds(*playerAttackIds.toIntArray()) }
     var selectedEnemyId by remember { mutableStateOf<Int?>(null) }
     val playSoundCue = rememberAttackSoundPlayer()
     val aliveEnemies = enemigos.filter { (enemyHpMap[it.id] ?: 0) > 0 }
@@ -113,6 +117,8 @@ fun BattleScreen(
                                 title = "Tu personaje",
                                 character = hero,
                                 currentHp = animatedPlayerHp,
+                                currentXP = playerXP,
+                                nextLevelXP = playerNextLevelXP,
                                 barColor = Color(0xFF0BA896),
                                 modifier = slotModifier
                             )
@@ -181,7 +187,7 @@ fun BattleScreen(
             }
         }
 
-        if (!battleFinished && requiresSkillSelection) {
+        if (requiresSkillSelection) {
             item {
                 Text("Elige una nueva habilidad", fontWeight = FontWeight.Bold, color = Color(0xFF3A8CA3))
             }
@@ -211,7 +217,7 @@ fun BattleScreen(
                     }
                 )
             }
-        } else if (battleFinished) {
+        } else if (battleFinished && !requiresSkillSelection) {
             item {
                 Button(onClick = onRetry, modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp)) { Text("Intentar otra vez") }

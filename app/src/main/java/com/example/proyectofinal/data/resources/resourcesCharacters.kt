@@ -60,7 +60,7 @@ fun getPlayableCharacters(): List<Hero> {
                 name = "Zombie",
                 role = "Enemigo básico",
                 rewardXp = 20,
-                HpStat = 80,
+                HpStat = 10,
                 attackStat = 4,
                 defenseStat = 3,
                 luckStat = 2,

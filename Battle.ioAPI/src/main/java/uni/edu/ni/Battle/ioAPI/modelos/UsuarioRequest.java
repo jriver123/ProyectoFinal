@@ -10,22 +10,18 @@ public class UsuarioRequest {
     private String email;
     private String password;
     private String description;
-
-    @JsonAlias({"nivel"})
     private Integer level;
-
-    @JsonAlias({"monedas"})
     private Integer coins;
 
-    @JsonAlias({"winned_matches", "winnedMatches", "partidasGanadas"})
+    @JsonAlias({"winned_matches", "winnedMatches"})
     private Integer winnedMatches;
 
-    @JsonAlias({"played_matches", "playedMatches", "partidasJugadas"})
+    @JsonAlias({"played_matches", "playedMatches"})
     private Integer playedMatches;
 
-    @JsonAlias({"story_progress", "storyProgress", "progresoHistoria"})
+    @JsonAlias({"story_progress", "storyProgress"})
     private Integer storyProgress;
 
-    @JsonAlias({"xp"})
     private Integer exp;
 }
+

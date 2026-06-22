@@ -353,47 +353,156 @@ fun getUnlockableAttacksForHero(hero: Hero): List<AttackMove> {
 }
 
 
+fun AttackMove.necesitaObjetivo(): Boolean {
+    return !type.equals("Soporte", ignoreCase = true) &&
+            !type.equals("Defensa", ignoreCase = true)
+}
+
+fun AttackMove.esSoporte(): Boolean {
+    return type.equals("Soporte", ignoreCase = true)
+}
+
+fun AttackMove.esDefensa(): Boolean {
+    return type.equals("Defensa", ignoreCase = true)
+}
 
 
 
+fun GetListOfAttacks(): List<AttackMove> {
+    return listOf(
+        AttackMove(
+            id = 1,
+            name = "Golpe",
+            basedamage = 16,
+            accuracy = 0.8,
+            type = "Fisico",
+            description = "Ataque básico con tus puños"
+        ),
+        AttackMove(
+            id = 2,
+            name = "Corte",
+            basedamage = 20,
+            accuracy = 0.6,
+            type = "Fisico",
+            description = "Ataque cortante contra el enemigo"
+        ),
+        AttackMove(
+            id = 3,
+            name = "Cabezazo",
+            basedamage = 15,
+            accuracy = 0.9,
+            type = "Fisico",
+            description = "Ataque básico con tu cabeza"
+        ),
+        AttackMove(
+            id = 4,
+            name = "Patada",
+            basedamage = 18,
+            accuracy = 0.7,
+            type = "Fisico",
+            description = "Ataque físico con tus piernas"
+        ),
+        AttackMove(
+            id = 5,
+            name = "Lanzamiento",
+            basedamage = 22,
+            accuracy = 0.5,
+            type = "Fisico",
+            description = "Ataque físico que lanza al enemigo por los aires"
+        ),
+        AttackMove(
+            id = 6,
+            name = "Rayo de energía",
+            basedamage = 24,
+            accuracy = 0.6,
+            type = "Magico",
+            description = "Descarga mágica de código puro"
+        ),
+        AttackMove(
+            id = 7,
+            name = "Bola de fuego",
+            basedamage = 19,
+            accuracy = 0.8,
+            type = "Magico",
+            description = "Ataque poderoso que altera al rival"
+        ),
+        AttackMove(
+            id = 8,
+            name = "Chispa",
+            basedamage = 18,
+            accuracy = 0.8,
+            type = "Magico",
+            description = "Ataque rápido y preciso"
+        ),
 
-    fun GetListOfAttacks(): List<AttackMove> {
-        return listOf(
-            AttackMove(
-                id = 1, name = "Golpe", basedamage = 16, accuracy = 0.8, type = "Fisico",
-                description = "Ataque básico con tus puños"
-            ),
-            AttackMove(
-                id = 2, name = "Corte", basedamage = 20, accuracy = 0.6, type = "Fisico",
-                description = "Ataque Cortante contra el enemigo"
-            ),
-            AttackMove(
-                id = 3, name = "Cabezazo", basedamage = 15, accuracy = 0.9, type = "Fisico",
-                description = "Ataque basico con tu cabeza"
-            ),
-            AttackMove(
-                id = 4, name = "Patada", basedamage = 18, accuracy = 0.7, type = "Físico",
-                description = "Ataque físico con tus piernas"
-            ),
-            AttackMove(
-                id = 5, name = "Lanzamiento", basedamage = 22, accuracy = 0.5, type = "Físico",
-                description = "Ataque físico que lanza al enemigo por los aires"
-            ),
-            AttackMove(
-                id = 6, name = "Rayo de energía", basedamage = 24, accuracy = 0.6, type = "Mágico",
-                description = "Descarga mágica de código puro."
-            ),
-            AttackMove(
-                id = 7, name = "Bola de fuego", basedamage = 19, accuracy = 0.8, type = "Mágico",
-                description = "Ataque poderoso que altera al rival."
-            ),
-            AttackMove(
-                id = 8, name = "Chispa", basedamage = 18, accuracy = 0.8, type = "Mágico",
-                description = "Ataque rápido y preciso."
+        // Nuevos ataques ofensivos
+        AttackMove(
+            id = 9,
+            name = "Estocada crítica",
+            basedamage = 28,
+            accuracy = 0.55,
+            type = "Ataque",
+            description = "Ataque fuerte con baja precisión"
+        ),
+        AttackMove(
+            id = 10,
+            name = "Golpe certero",
+            basedamage = 20,
+            accuracy = 0.95,
+            type = "Ataque",
+            description = "Ataque de daño medio con alta precisión"
+        ),
 
-            )
+        // Habilidades de soporte
+        AttackMove(
+            id = 11,
+            name = "Curación rápida",
+            basedamage = 0,
+            accuracy = 1.0,
+            type = "Soporte",
+            description = "Recupera 25 puntos de vida",
+            healAmount = 25
+        ),
+        AttackMove(
+            id = 12,
+            name = "Pulso sanador",
+            basedamage = 0,
+            accuracy = 1.0,
+            type = "Soporte",
+            description = "Recupera 40 puntos de vida",
+            healAmount = 40
+        ),
+
+        // Habilidades defensivas
+        AttackMove(
+            id = 13,
+            name = "Escudo de datos",
+            basedamage = 0,
+            accuracy = 1.0,
+            type = "Defensa",
+            description = "Reduce el próximo daño recibido en 50%",
+            shieldPercent = 0.50
+        ),
+        AttackMove(
+            id = 14,
+            name = "Postura defensiva",
+            basedamage = 0,
+            accuracy = 1.0,
+            type = "Defensa",
+            description = "Reduce el próximo daño recibido en 35%",
+            shieldPercent = 0.35
+        ),
+        AttackMove(
+            id = 15,
+            name = "Barrera final",
+            basedamage = 0,
+            accuracy = 1.0,
+            type = "Defensa",
+            description = "Reduce el próximo daño recibido en 70%",
+            shieldPercent = 0.70
         )
-    }
+    )
+}
 
 fun getAttacksByIds(vararg ids: Int): List<AttackMove> {
     val attacks = GetListOfAttacks()

@@ -3,6 +3,7 @@ package com.example.proyectofinal.ui.components
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.os.Build
+import com.example.proyectofinal.data.resources.necesitaObjetivo
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -284,7 +285,10 @@ fun AttackCommandBar(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                text = if (selectedEnemyName == null) "Selecciona un enemigo" else "Objetivo: $selectedEnemyName",
+                text = if (selectedEnemyName == null)
+                    "Selecciona enemigo para ataques. Soporte y defensa no necesitan objetivo."
+                else
+                    "Objetivo: $selectedEnemyName",
                 fontWeight = FontWeight.SemiBold,
                 color = Color(0xFF3A0CA3)
             )
@@ -295,7 +299,9 @@ fun AttackCommandBar(
             ) {
                 attackSlots.forEach { attack ->
                     val artResId = attack?.let { getAttackSkillArtResId(it.id) } ?: R.drawable.sa_null
-                    val enabled = attack != null && canUseAttacks
+                    val enabled = attack != null &&
+                            canUseAttacks &&
+                            (!attack.necesitaObjetivo() || selectedEnemyName != null)
 
                     OutlinedButton(
                         onClick = { if (attack != null) onAttackClick(attack) },

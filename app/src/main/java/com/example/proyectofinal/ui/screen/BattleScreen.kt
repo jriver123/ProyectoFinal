@@ -208,11 +208,19 @@ fun BattleScreen(
             item {
                 AttackCommandBar(
                     attacks = playerAttacks,
-                    canUseAttacks = selectedEnemyId != null && !isResolvingTurn,
+                    canUseAttacks = !isResolvingTurn,
                     selectedEnemyName = aliveEnemies.firstOrNull { it.id == selectedEnemyId }?.name,
                     onAttackClick = { attack ->
-                        val targetId = selectedEnemyId ?: return@AttackCommandBar
-                        if (targetId !in aliveEnemyIds) return@AttackCommandBar
+                        val targetId = if (attack.necesitaObjetivo()) {
+                            selectedEnemyId ?: return@AttackCommandBar
+                        } else {
+                            selectedEnemyId ?: -1
+                        }
+
+                        if (attack.necesitaObjetivo() && targetId !in aliveEnemyIds) {
+                            return@AttackCommandBar
+                        }
+
                         onAttack(attack, targetId)
                     }
                 )

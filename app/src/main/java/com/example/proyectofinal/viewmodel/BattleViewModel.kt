@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import com.example.proyectofinal.data.resources.necesitaObjetivo
 import androidx.lifecycle.viewModelScope
 import com.example.proyectofinal.data.resources.AttackMove
 import com.example.proyectofinal.data.resources.BattleEngine
@@ -42,6 +43,8 @@ class BattleViewModel(
     var userRewardRegistered by mutableStateOf(false)
     var soundCue by mutableStateOf<BattleSoundCue?>(null)
 
+    private var playerShieldPercent: Double = 0.0
+
     private var engineState: BattleEngineState? = null
 
     private fun applyState(newState: BattleEngineState) {
@@ -76,6 +79,7 @@ class BattleViewModel(
         userRewardRegistered = false
         isResolvingTurn = false
         soundCue = null
+        playerShieldPercent = 0.0
     }
 
     private fun syncPlayerStats(player: Hero) {
@@ -87,8 +91,17 @@ class BattleViewModel(
 
     fun atacar(player: Hero, enemigos: List<Enemy>, targetId: Int, ataque: AttackMove) {
         val currentState = engineState ?: return
-        if (isResolvingTurn || !currentState.isPlayerTurn || currentState.battleFinished || requiresSkillSelection) return
-        if ((currentState.enemyHpMap[targetId] ?: 0) <= 0) return
+
+        if (isResolvingTurn || !currentState.isPlayerTurn || currentState.battleFinished || requiresSkillSelection) {
+            return
+        }
+
+        if (ataque.necesitaObjetivo()) {
+            if ((currentState.enemyHpMap[targetId] ?: 0) <= 0) {
+                battleMessage = "Selecciona un enemigo vivo."
+                return
+            }
+        }
 
         viewModelScope.launch {
             isResolvingTurn = true
@@ -102,20 +115,70 @@ class BattleViewModel(
         }
     }
 
-    private suspend fun executePlayerTurn(player: Hero, enemigos: List<Enemy>, targetId: Int, ataque: AttackMove) {
+    private suspend fun executePlayerTurn(
+        player: Hero,
+        enemigos: List<Enemy>,
+        targetId: Int,
+        ataque: AttackMove
+    ) {
         val currentState = engineState ?: return
-        val enemy = enemigos.firstOrNull { it.id == targetId } ?: return
 
-        battleMessage = "${player.name} usara ${ataque.name}..."
+        battleMessage = "${player.name} usará ${ataque.name}..."
         delay(BattleTurnTimings.AttackAnnounceMs)
 
-        val (danio, mensaje) = combatManager.realizarAtaqueJugador(ataque, atacante = player, defensor = enemy)
-        
+        if (!ataque.necesitaObjetivo()) {
+            val newHp = (currentState.playerHp + ataque.healAmount).coerceAtMost(player.HpStat)
+
+            if (ataque.shieldPercent > 0.0) {
+                playerShieldPercent = maxOf(playerShieldPercent, ataque.shieldPercent)
+            }
+
+            val effectMessage = when {
+                ataque.healAmount > 0 && ataque.shieldPercent > 0.0 ->
+                    "${player.name} usa ${ataque.name}, recupera ${ataque.healAmount} de vida y activa un escudo."
+
+                ataque.healAmount > 0 ->
+                    "${player.name} usa ${ataque.name} y recupera ${ataque.healAmount} de vida."
+
+                ataque.shieldPercent > 0.0 -> {
+                    val percent = (ataque.shieldPercent * 100).toInt()
+                    "${player.name} usa ${ataque.name} y reduce el próximo daño recibido en $percent%."
+                }
+
+                else ->
+                    "${player.name} usa ${ataque.name}."
+            }
+
+            emitAttackSound(ataque.id)
+            delay(BattleTurnTimings.SoundLeadMs)
+
+            applyState(
+                currentState.copy(
+                    playerHp = newHp,
+                    battleMessage = effectMessage,
+                    isPlayerTurn = false
+                )
+            )
+
+            delay(BattleTurnTimings.PostImpactMs)
+            enemyTurn(player, enemigos)
+            return
+        }
+
+        val enemy = enemigos.firstOrNull { it.id == targetId } ?: return
+
+        val (danio, mensaje) = combatManager.realizarAtaqueJugador(
+            ataque,
+            atacante = player,
+            defensor = enemy
+        )
+
         if (danio == 0) {
             emitMissSound(ataque.id)
         } else {
             emitAttackSound(ataque.id)
         }
+
         delay(BattleTurnTimings.SoundLeadMs)
 
         val playerOutcome = battleEngine.applyPlayerAttack(
@@ -124,19 +187,22 @@ class BattleViewModel(
             damage = danio,
             actionMessage = mensaje
         )
+
         applyState(playerOutcome.state)
         delay(BattleTurnTimings.PostImpactMs)
 
         if (playerOutcome.defeatedEnemyId != null) {
             val previousLevel = player.level
+
             giveXP(player, enemy.rewardXp)
             syncPlayerStats(player)
 
             if (player.level > previousLevel) {
                 pendingSkillChoices = getUnlockableAttacksForHero(player).take(3)
                 requiresSkillSelection = pendingSkillChoices.isNotEmpty()
+
                 if (requiresSkillSelection) {
-                    battleMessage = "${player.name} subio a nivel ${player.level}. Elige una habilidad nueva."
+                    battleMessage = "${player.name} subió a nivel ${player.level}.\nElige una habilidad nueva."
                 }
             }
         }
@@ -185,20 +251,36 @@ class BattleViewModel(
             isPlayerTurn = false
             delay(BattleTurnTimings.AttackAnnounceMs)
 
-            val (danio, mensaje) = combatManager.realizarAtaqueEnemigo(ataque, atacante = enemigo, defensor = player)
-            
-            if (danio == 0) {
+            val (danio, mensaje) = combatManager.realizarAtaqueEnemigo(
+                ataque,
+                atacante = enemigo,
+                defensor = player
+            )
+
+            var finalDamage = danio
+            var finalMessage = mensaje
+
+            if (playerShieldPercent > 0.0 && finalDamage > 0) {
+                val reducedDamage = (finalDamage * playerShieldPercent).toInt()
+                finalDamage = (finalDamage - reducedDamage).coerceAtLeast(0)
+                finalMessage = "$mensaje. El escudo reduce $reducedDamage de daño."
+                playerShieldPercent = 0.0
+            }
+
+            if (finalDamage == 0) {
                 emitMissSound(ataque.id)
             } else {
                 emitAttackSound(ataque.id)
             }
+
             delay(BattleTurnTimings.SoundLeadMs)
 
             val enemyOutcome = battleEngine.applyEnemyAttack(
                 current = stateInTurn,
-                damage = danio,
-                actionMessage = mensaje
+                damage = finalDamage,
+                actionMessage = finalMessage
             )
+
             applyState(enemyOutcome.state)
             stateInTurn = enemyOutcome.state
             delay(BattleTurnTimings.PostImpactMs)

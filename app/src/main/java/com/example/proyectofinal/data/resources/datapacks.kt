@@ -56,10 +56,12 @@ data class StoryChapter(
     val rewardXp: Int
 )
 data class AttackMove(
-    val id : Int,
+    val id: Int,
     val name: String,
     val basedamage: Int,
     val accuracy: Double,
     val type: String,
-    val description: String
+    val description: String,
+    val healAmount: Int = 0,
+    val shieldPercent: Double = 0.0
 )

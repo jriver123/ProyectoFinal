@@ -41,9 +41,9 @@ fun createStoryOpponents(): List<StoryOpponent> {
     return listOf(
         StoryOpponent(
             id = 1,
-            name = "Aiden",
+            name = "Jole",
             description = "Explorador del sistema central. Analiza a sus rivales antes de atacar.",
-            imageResId = R.drawable.hero_rex
+            imageResId = R.drawable.jole
         ),
         StoryOpponent(
             id = 2,

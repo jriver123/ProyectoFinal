@@ -86,6 +86,21 @@ class UsuarioRepository(
     )
   }
 
+   // ✅ Para actualizaciones: no enviar password para evitar afectar credenciales
+   private fun UsuarioUI.toUpdateRequest(): UsuarioUpdateRequest {
+     return UsuarioUpdateRequest(
+       username = username,
+       email = email,
+       description = description,
+       nivel = nivel.coerceAtLeast(1),
+       monedas = monedas.coerceAtLeast(0),
+       partidasGanadas = partidasGanadas.coerceAtLeast(0),
+       partidasJugadas = partidasJugadas.coerceAtLeast(0),
+       storyProgress = storyProgress.coerceAtLeast(1),
+       exp = exp.coerceAtLeast(0)
+     )
+   }
+
   private fun requireBody(response: Response<UsuarioUI>, errorMessage: String): UsuarioUI {
     if (response.isSuccessful) {
       return response.body() ?: throw Exception("Usuario no encontrado")
@@ -176,7 +191,7 @@ class UsuarioRepository(
 
   // Actualizar usuario
   suspend fun updateUsuario(id: Long, usuario: UsuarioUI): UsuarioUI {
-    val response = api.updateUsuario(id, usuario.toRequest())
+    val response = api.updateUsuario(id, usuario.toUpdateRequest())
     if (response.isSuccessful) {
       return response.body() ?: throw Exception("Error al actualizar usuario")
     }

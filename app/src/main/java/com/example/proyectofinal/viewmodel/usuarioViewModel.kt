@@ -84,8 +84,8 @@ class UsuarioViewModel(
 					partidasGanadas = 0,
 					partidasJugadas = 0,
 					storyProgress = 1,
-					exp = 0,
-					password = normalizedPassword
+					exp = 0
+					// ✅ No guardar password en el objeto de UI - se almacena en Room
 				)
 
 				// Guardar en Room

@@ -4,10 +4,11 @@ package uni.edu.ni.Battle.ioAPI.controlador;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import uni.edu.ni.Battle.ioAPI.modelos.ActualizarParRequest;
+import uni.edu.ni.Battle.ioAPI.modelos.ActualizarStatsRequest;
+import uni.edu.ni.Battle.ioAPI.modelos.ActualizarUsuarioRequest;
 import uni.edu.ni.Battle.ioAPI.modelos.LoginRequest;
 import uni.edu.ni.Battle.ioAPI.modelos.LoginResponse;
-import uni.edu.ni.Battle.ioAPI.modelos.RegistroPartidaRequest;
-import uni.edu.ni.Battle.ioAPI.modelos.UsuarioRequest;
 import uni.edu.ni.Battle.ioAPI.modelos.UsuarioUI;
 import uni.edu.ni.Battle.ioAPI.servicios.UsuarioService;
 
@@ -44,14 +45,29 @@ public class UsuarioController {
             }
         }
 
+
+
+
+
+
     @PostMapping
-    public UsuarioUI registrar(@RequestBody UsuarioRequest usuario) {
+    public UsuarioUI registrar(@RequestBody UsuarioUI usuario) {
         return service.registrar(usuario);
     }
 
-    @PutMapping("/{id}")
-    public UsuarioUI actualizar(@PathVariable Long id, @RequestBody UsuarioRequest usuario) {
-        return service.actualizar(id, usuario);
+    @PutMapping("/{id}/actualizar-par")
+    public UsuarioUI actualizarPar(@PathVariable Long id, @RequestBody ActualizarParRequest request) {
+        return service.actualizarPar(id, request);
+    }
+
+    @PutMapping("/{id}/actualizar-usuario")
+    public UsuarioUI actualizarUsuario(@PathVariable Long id, @RequestBody ActualizarUsuarioRequest request) {
+        return service.actualizarUsuario(id, request);
+    }
+
+    @PutMapping("/{id}/actualizar-stats")
+    public UsuarioUI actualizarStats(@PathVariable Long id, @RequestBody ActualizarStatsRequest request) {
+        return service.actualizarStats(id, request);
     }
 
     @DeleteMapping("/{id}")
@@ -67,17 +83,5 @@ public class UsuarioController {
     @GetMapping
     public List<UsuarioUI> listar() {
         return service.listar();
-    }
-
-    @PatchMapping("/{id}/estadisticas")
-    public ResponseEntity<?> registrarEstadisticasPartida(@PathVariable Long id,
-                                                           @RequestBody RegistroPartidaRequest request) {
-        try {
-            return ResponseEntity.ok(service.registrarEstadisticasPartida(id, request));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
     }
 }

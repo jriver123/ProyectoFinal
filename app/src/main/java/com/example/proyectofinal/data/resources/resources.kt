@@ -366,6 +366,27 @@ fun AttackMove.esDefensa(): Boolean {
     return type.equals("Defensa", ignoreCase = true)
 }
 
+fun AttackMove.maxTargets(): Int {
+    if (!necesitaObjetivo()) return 0
+    return targetCount.coerceIn(1, 4)
+}
+
+fun resolveAttackTargetIds(
+    attack: AttackMove,
+    selectedEnemyIds: List<Int>,
+    aliveEnemyIds: Set<Int>
+): List<Int>? {
+    val requiredTargets = attack.maxTargets()
+    if (requiredTargets == 0) return emptyList()
+
+    val validSelected = selectedEnemyIds
+        .distinct()
+        .filter { it in aliveEnemyIds }
+
+    if (validSelected.size < requiredTargets) return null
+    return validSelected.take(requiredTargets)
+}
+
 
 
 fun GetListOfAttacks(): List<AttackMove> {
@@ -382,7 +403,7 @@ fun GetListOfAttacks(): List<AttackMove> {
             id = 2,
             name = "Corte",
             basedamage = 20,
-            accuracy = 0.6,
+            accuracy = 0.95,
             type = "Fisico",
             description = "Ataque cortante contra el enemigo"
         ),
@@ -424,7 +445,8 @@ fun GetListOfAttacks(): List<AttackMove> {
             basedamage = 19,
             accuracy = 0.8,
             type = "Magico",
-            description = "Ataque poderoso que altera al rival"
+            description = "Ataque poderoso que altera al rival",
+            targetCount = 2
         ),
         AttackMove(
             id = 8,
@@ -512,20 +534,22 @@ fun getAttacksByIds(vararg ids: Int): List<AttackMove> {
 
 fun getStoryChapters(): List<StoryChapter> {
     val enemies = GetEnemies()
+    // Acceso seguro: si el índice no existe, usa el último enemigo disponible
+    fun e(index: Int) = enemies.getOrElse(index) { enemies.last() }
     return listOf(
         StoryChapter(
             id = 1,
             title = "Capítulo 1: ",
             description = "",
-            enemies = listOf(enemies[0]),
+            enemies = listOf(e(0),e(0),e(0),e(0)),
             rewardCoins = 100,
             rewardXp = 50
         ),
         StoryChapter(
             id = 2,
-            title = "Capítulo 1.1: ",
+            title = "Capítulo 2: ",
             description = "",
-            enemies = listOf(enemies[0]),
+            enemies = listOf(e(0), e(1)),
             rewardCoins = 150,
             rewardXp = 75
         ),
@@ -533,7 +557,7 @@ fun getStoryChapters(): List<StoryChapter> {
             id = 3,
             title = "Capítulo 3: ",
             description = "",
-            enemies = listOf(enemies[0]),
+            enemies = listOf(e(2)),   // era enemies[3] — índice inválido (solo hay 0,1,2)
             rewardCoins = 200,
             rewardXp = 100
         )

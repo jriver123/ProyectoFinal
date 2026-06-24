@@ -37,20 +37,25 @@ import com.example.proyectofinal.data.resources.AppDefaults
 import com.example.proyectofinal.data.resources.BackgroundMusicPlayer
 import com.example.proyectofinal.data.resources.GetTranssStorySec
 import com.example.proyectofinal.data.resources.ScreenBgMusic
+import com.example.proyectofinal.data.resources.getHeroUnlockOffers
 import com.example.proyectofinal.data.resources.getPlayableCharacters
 import com.example.proyectofinal.data.resources.getStoryChapters
 import com.example.proyectofinal.data.resources.t
+import com.example.proyectofinal.data.resources.GetListOfAttacks
 import com.example.proyectofinal.ui.screen.BattleScreen
 import com.example.proyectofinal.ui.screen.CharacterSelectionScreen
+import com.example.proyectofinal.ui.screen.CompendiumScreen
 import com.example.proyectofinal.ui.screen.HomeScreen
 import com.example.proyectofinal.ui.screen.LoginScreen
 import com.example.proyectofinal.ui.screen.MatchesScreen
 import com.example.proyectofinal.ui.screen.ProfileScreen
 import com.example.proyectofinal.ui.screen.RegisterScreen
 import com.example.proyectofinal.ui.screen.SettingsScreen
+import com.example.proyectofinal.ui.screen.SkillDetailScreen
+import com.example.proyectofinal.ui.screen.SkillsScreen
 import com.example.proyectofinal.ui.screen.StoryScreen
 import com.example.proyectofinal.ui.screen.StoreScreen
-import com.example.proyectofinal.ui.screen.TransssStoryScreen
+import com.example.proyectofinal.ui.screen.TranssStoryScreen
 import com.example.proyectofinal.viewmodel.BattleViewModel
 import com.example.proyectofinal.viewmodel.UsuarioViewModel
 import com.example.proyectofinal.viewmodel.UsuarioViewModelFactory
@@ -101,6 +106,7 @@ fun AppNavHost() {
     val musicVolume = settings.musicVolume
     val soundVolume = settings.soundVolume
     val selectedPackId = settings.selectedPackId
+    val unlockedHeroIds = settings.unlockedHeroIds
 
     val usuarioActivo = usuarioUIState.usuarioActivo
 
@@ -142,6 +148,18 @@ fun AppNavHost() {
             AppRoutes.Home -> {
                 BackgroundMusicPlayer.playScreenMusic(context, ScreenBgMusic.Home)
                 // Volumen normal
+                BackgroundMusicPlayer.setVolume(musicVolume / 100f)
+            }
+            AppRoutes.Compendium -> {
+                BackgroundMusicPlayer.playScreenMusic(context, ScreenBgMusic.Home)
+                BackgroundMusicPlayer.setVolume(musicVolume / 100f)
+            }
+            AppRoutes.Skills -> {
+                BackgroundMusicPlayer.playScreenMusic(context, ScreenBgMusic.Home)
+                BackgroundMusicPlayer.setVolume(musicVolume / 100f)
+            }
+            AppRoutes.SkillDetailWithArg -> {
+                BackgroundMusicPlayer.playScreenMusic(context, ScreenBgMusic.Home)
                 BackgroundMusicPlayer.setVolume(musicVolume / 100f)
             }
             AppRoutes.Matches -> {
@@ -299,8 +317,38 @@ fun AppNavHost() {
                             profileImageUri = null,
                             onGoToStore = { navController.navigate(AppRoutes.Store) },
                             onGoToProfile = { navController.navigate(AppRoutes.Profile) },
-                            onGoToStory = { navController.navigate(AppRoutes.Story) }
+                            onGoToStory = { navController.navigate(AppRoutes.Story) },
+                            onGoToCompendium = { navController.navigate(AppRoutes.Compendium) },
+                            onGoToSkills = { navController.navigate(AppRoutes.Skills) }
                         )
+                    }
+                }
+                composable(AppRoutes.Compendium) {
+                    CompendiumScreen(
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+                composable(AppRoutes.Skills) {
+                    SkillsScreen(
+                        onOpenSkill = { attackId ->
+                            navController.navigate(AppRoutes.skillDetail(attackId))
+                        },
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+                composable(AppRoutes.SkillDetailWithArg) { backStackEntry ->
+                    val attackId = backStackEntry.arguments
+                        ?.getString("attackId")
+                        ?.toIntOrNull()
+                    val attack = GetListOfAttacks().firstOrNull { it.id == attackId }
+
+                    if (attack != null) {
+                        SkillDetailScreen(
+                            attack = attack,
+                            onBack = { navController.popBackStack() }
+                        )
+                    } else {
+                        Text("Habilidad no encontrada")
                     }
                 }
                 composable(AppRoutes.Matches) {
@@ -325,16 +373,26 @@ fun AppNavHost() {
                 composable(AppRoutes.Store) {
                     val storeUiState by usuarioViewModel.uiState.collectAsState()
                     storeUiState.usuarioActivo?.let { usuario ->
+                        val heroOffers = getHeroUnlockOffers()
                         StoreScreen(
                             usuario = usuario,
                             language = selectedLanguage,
                             packs = AppDefaults.DemoPacks,
+                            heroOffers = heroOffers,
+                            unlockedHeroIds = unlockedHeroIds,
                             selectedPackId = selectedPackId,
                             navController = navController,
                             onSelectPack = { packId ->
                                 scope.launch { settingsRepository.setSelectedPackId(packId) }
                             },
-                            onPurchase = { }
+                            onPurchase = { },
+                            onBuyHero = { offer ->
+                                usuarioViewModel.comprarHeroe(offer.heroId, offer.priceCoins) { success ->
+                                    if (success) {
+                                        scope.launch { settingsRepository.unlockHero(offer.heroId) }
+                                    }
+                                }
+                            }
                         )
                     }
                 }
@@ -379,12 +437,16 @@ fun AppNavHost() {
                         var profilePassword by rememberSaveable(profileUsuario.id) {
                             mutableStateOf(profileUsuario.password)
                         }
+                        var originalProfilePassword by rememberSaveable(profileUsuario.id) {
+                            mutableStateOf(profileUsuario.password)
+                        }
 
                         LaunchedEffect(profileUsuario) {
                             profileNombre = profileUsuario.username
                             profileCorreo = profileUsuario.email
                             profileBio = profileUsuario.description.orEmpty()
                             profilePassword = profileUsuario.password
+                            originalProfilePassword = profileUsuario.password
                         }
 
                         val profileDraft = profileUsuario.copy(
@@ -408,7 +470,14 @@ fun AppNavHost() {
                                 usuarioViewModel.cargarUsuarioDetalles(profileUsuario.id)
                             },
                             onSave = {
-                                usuarioViewModel.actualizarUsuario(profileUsuario.id, profileDraft)
+                                val currentPassword = profilePassword.trim()
+                                val initialPassword = originalProfilePassword.trim()
+                                val passwordChanged = currentPassword.isNotBlank() && currentPassword != initialPassword
+                                usuarioViewModel.actualizarUsuario(
+                                    profileUsuario.id,
+                                    profileDraft,
+                                    passwordChanged = passwordChanged
+                                )
                             },
                             onDeleteUsuario = {
                                 usuarioViewModel.eliminarUsuario(profileUsuario.id)
@@ -459,10 +528,13 @@ fun AppNavHost() {
                             ?.id ?: chapters.first().id
 
                         val section = GetTranssStorySec(chapterId)
-                        val player = heroRoster.values.firstOrNull()
+                        val unlockedHeroes = heroRoster.values
+                            .filter { it.id in unlockedHeroIds }
+                            .ifEmpty { listOf(getPlayableCharacters().first()) }
+                        val player = unlockedHeroes.firstOrNull()
                             ?: getPlayableCharacters().first()
 
-                        TransssStoryScreen(
+                        TranssStoryScreen(
                             player = player,
                             section = section,
                             onOptionSelected = { _, _ ->
@@ -480,7 +552,9 @@ fun AppNavHost() {
                     }
                 }
                 composable(AppRoutes.CharacterSelect) {
-                    val characters = heroRoster.values.toList()
+                    val characters = heroRoster.values
+                        .filter { it.id in unlockedHeroIds }
+                        .ifEmpty { listOf(getPlayableCharacters().first()) }
 
                     var selectedCharacterId by rememberSaveable { mutableStateOf(-1) }
 
@@ -498,13 +572,20 @@ fun AppNavHost() {
                 }
                 composable(AppRoutes.BattleWithArg) { backStackEntry ->
                     val characterId = backStackEntry.arguments?.getString("characterId")?.toIntOrNull()
-                    val characters = heroRoster.values.toList()
+                    val characters = heroRoster.values
+                        .filter { it.id in unlockedHeroIds }
+                        .ifEmpty { listOf(getPlayableCharacters().first()) }
                     val player = characters.firstOrNull { it.id == characterId } ?: characters.first()
                     val battleStoryProgress = usuarioUIState.usuarioActivo?.storyProgress ?: 1
                     val allChapters = getStoryChapters()
                     val chapter = allChapters.firstOrNull { it.id == battleStoryProgress }
                         ?: allChapters.first()
-                    val enemies = chapter.enemies
+                    // Cada instancia de enemigo necesita id único en combate para evitar
+                    // selección/daño compartido cuando hay enemigos del mismo tipo.
+                    val enemies = chapter.enemies.mapIndexed { index, enemy ->
+                        enemy.copy(id = chapter.id * 100 + index + 1)
+                    }
+                    val isLastChapter = chapter.id >= allChapters.maxOf { it.id }
 
                     val battleViewModel: BattleViewModel = viewModel()
 
@@ -576,17 +657,31 @@ fun AppNavHost() {
                         enemyHpMap = battleViewModel.enemyHpMap,
                         battleMessage = battleViewModel.battleMessage,
                         battleFinished = battleViewModel.battleFinished,
+                        playerWon = battleViewModel.playerWon,
+                        isLastChapter = isLastChapter,
                         requiresSkillSelection = battleViewModel.requiresSkillSelection,
                         pendingSkillChoices = battleViewModel.pendingSkillChoices,
                         soundCue = battleViewModel.soundCue,
                         onSoundConsumed = { battleViewModel.consumeSoundCue() },
-                        onAttack = { attack, targetId ->
-                            battleViewModel.atacar(player, enemies, targetId, ataque = attack)
+                        onAttack = { attack, targetIds ->
+                            battleViewModel.atacar(player, enemies, targetIds, ataque = attack)
                         },
                         onSelectSkill = { attackId ->
                             battleViewModel.seleccionarNuevaHabilidad(player, attackId)
                         },
-                        onExit = { navController.navigate(AppRoutes.Matches) },
+                        onContinueStory = {
+                            BackgroundMusicPlayer.stopMusic()
+                            usuarioActivo?.id?.let { userId ->
+                                usuarioViewModel.advanceStory(userId)
+                            }
+                            navController.navigate(AppRoutes.TranssStory) {
+                                popUpTo(AppRoutes.BattleWithArg) { inclusive = true }
+                            }
+                        },
+                        onExit = {
+                            BackgroundMusicPlayer.stopMusic()
+                            navController.navigate(AppRoutes.Matches)
+                        },
                         onRetry = { battleViewModel.reiniciar(player, enemies) }
                     )
                 }

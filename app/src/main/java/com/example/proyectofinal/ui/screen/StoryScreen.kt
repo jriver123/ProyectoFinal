@@ -31,6 +31,13 @@ fun StoryScreen(
 ) {
     val chapters = getStoryChapters()
     val chapter = chapters.firstOrNull { it.id == storyProgress } ?: chapters.last()
+    val combatTitle = "Combate numero ${chapter.id}"
+    val chapterCombatDescription = when (chapter.id) {
+        1 -> "Tu primer combate! Elige bien a tu Avatar y destruye el Avatar de tu contrincante para ganar la partida. ¡Buena suerte!"
+        2 -> "Segundo combate de la historia. Ahora enfrentaras mas de un enemigo, organiza tu objetivo y mantiene el ritmo de ataque."
+        3 -> "Combate final del contenido actual. Da tu mejor batalla para cerrar este capitulo y avanzar en la historia principal."
+        else -> "Nuevo combate de historia. Preparate, selecciona bien tu avatar y derrota a tus oponentes."
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -103,13 +110,12 @@ fun StoryScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "Combate numero 1",
+                        text = combatTitle,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF3A0CA3)
                     )
                     Text(
-                        text = "Tu primer combate! Elige bien a tu Avatar y destruye el Avatar de tu contricante"+
-                        " para ganar la partida. ¡Buena suerte!",// Aquí podrías agregar una sinopsis general de la historia
+                        text = chapterCombatDescription,
                         color = Color(0xFF34344A)
                     )
                 }

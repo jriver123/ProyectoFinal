@@ -2,6 +2,14 @@ package com.example.proyectofinal.data.resources
 
 import com.example.proyectofinal.R
 
+data class HeroUnlockOffer(
+    val heroId: Int,
+    val heroName: String,
+    val heroRole: String,
+    val heroImageResId: Int,
+    val priceCoins: Int
+)
+
 
 fun getPlayableCharacters(): List<Hero> {
 
@@ -11,7 +19,7 @@ fun getPlayableCharacters(): List<Hero> {
             name = "Kael",
             level = 1,
             currentXP = 0,
-            role = "Guerrero del Núcleo",
+            role = "Guerrero de la Arena",
             HpStat = 125,
             attackStat = 6,
             defenseStat = 8,
@@ -25,7 +33,7 @@ fun getPlayableCharacters(): List<Hero> {
             name = "Luna",
             level = 1,
             currentXP = 0,
-            role = "Hechicera de datos",
+            role = "Hechicera de la Arena",
             HpStat = 100,
             attackStat = 11,
             defenseStat = 5,
@@ -49,6 +57,20 @@ fun getPlayableCharacters(): List<Hero> {
             imageResId = R.drawable.hero_rex
         )
     )
+}
+
+fun getHeroUnlockOffers(): List<HeroUnlockOffer> {
+    return getPlayableCharacters()
+        .filter { it.id != 1 }
+        .map {
+            HeroUnlockOffer(
+                heroId = it.id,
+                heroName = it.name,
+                heroRole = it.role,
+                heroImageResId = it.imageResId,
+                priceCoins = 2000
+            )
+        }
 }
 
     fun GetEnemies(): List<Enemy>{

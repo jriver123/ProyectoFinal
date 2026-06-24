@@ -49,6 +49,7 @@ import androidx.compose.ui.layout.ContentScale
 import com.example.proyectofinal.R
 import com.example.proyectofinal.data.resources.AttackMove
 import com.example.proyectofinal.data.resources.getAttackSkillArtResId
+import com.example.proyectofinal.data.resources.maxTargets
 
 @Composable
 fun StatCard(title: String, value: String, subtitle: String, modifier: Modifier = Modifier) {
@@ -268,7 +269,8 @@ fun EnemyPortraitFrame(
 fun AttackCommandBar(
     attacks: List<AttackMove>,
     canUseAttacks: Boolean,
-    selectedEnemyName: String?,
+    selectedAttack: AttackMove?,
+    selectedTargetsCount: Int,
     onAttackClick: (AttackMove) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -285,10 +287,14 @@ fun AttackCommandBar(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                text = if (selectedEnemyName == null)
-                    "Selecciona enemigo para ataques. Soporte y defensa no necesitan objetivo."
-                else
-                    "Objetivo: $selectedEnemyName",
+                text = when {
+                    selectedAttack == null -> "Elige un ataque primero."
+                    !selectedAttack.necesitaObjetivo() -> "Ataque de soporte/defensa listo para ejecutar."
+                    else -> {
+                        val needed = selectedAttack.maxTargets()
+                        "Objetivos: $selectedTargetsCount/$needed"
+                    }
+                },
                 fontWeight = FontWeight.SemiBold,
                 color = Color(0xFF3A0CA3)
             )
@@ -299,22 +305,37 @@ fun AttackCommandBar(
             ) {
                 attackSlots.forEach { attack ->
                     val artResId = attack?.let { getAttackSkillArtResId(it.id) } ?: R.drawable.sa_null
-                    val enabled = attack != null &&
-                            canUseAttacks &&
-                            (!attack.necesitaObjetivo() || selectedEnemyName != null)
+                    val enabled = attack != null && canUseAttacks
+                    val isSelected = attack != null && selectedAttack?.id == attack.id
 
                     OutlinedButton(
                         onClick = { if (attack != null) onAttackClick(attack) },
                         enabled = enabled,
                         modifier = Modifier.width(76.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Image(
-                            painter = painterResource(id = artResId),
-                            contentDescription = attack?.name ?: "Ataque vacio",
-                            modifier = Modifier.size(42.dp),
-                            contentScale = ContentScale.Crop
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (isSelected) Color(0xFFEDE7FF) else Color.Transparent,
+                            contentColor = Color(0xFF3A0CA3)
                         )
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = artResId),
+                                contentDescription = attack?.name ?: "Ataque vacio",
+                                modifier = Modifier.size(34.dp),
+                                contentScale = ContentScale.Crop
+                            )
+                            if (attack != null) {
+                                Text(
+                                    text = if (attack.necesitaObjetivo()) "x${attack.maxTargets()}" else "SELF",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
             }

@@ -86,20 +86,32 @@ class UsuarioRepository(
     )
   }
 
-   // ✅ Para actualizaciones: no enviar password para evitar afectar credenciales
-   private fun UsuarioUI.toUpdateRequest(): UsuarioUpdateRequest {
-     return UsuarioUpdateRequest(
-       username = username,
-       email = email,
-       description = description,
-       nivel = nivel.coerceAtLeast(1),
-       monedas = monedas.coerceAtLeast(0),
-       partidasGanadas = partidasGanadas.coerceAtLeast(0),
-       partidasJugadas = partidasJugadas.coerceAtLeast(0),
-       storyProgress = storyProgress.coerceAtLeast(1),
-       exp = exp.coerceAtLeast(0)
-     )
-   }
+  private fun UsuarioUI.toActualizarParRequest(): ActualizarParRequest {
+    return ActualizarParRequest(
+      username = username,
+      email = email,
+      description = description
+    )
+  }
+
+  private fun UsuarioUI.toActualizarUsuarioRequest(password: String): ActualizarUsuarioRequest {
+    return ActualizarUsuarioRequest(
+      username = username,
+      email = email,
+      description = description,
+      password = password
+    )
+  }
+
+  private fun UsuarioUI.toActualizarStatsRequest(): ActualizarStatsRequest {
+    return ActualizarStatsRequest(
+      nivel = nivel.coerceAtLeast(1),
+      monedas = monedas.coerceAtLeast(0),
+      partidasGanadas = partidasGanadas.coerceAtLeast(0),
+      partidasJugadas = partidasJugadas.coerceAtLeast(0),
+      storyProgress = storyProgress.coerceAtLeast(1)
+    )
+  }
 
   private fun requireBody(response: Response<UsuarioUI>, errorMessage: String): UsuarioUI {
     if (response.isSuccessful) {
@@ -189,31 +201,32 @@ class UsuarioRepository(
     throw Exception("Error al registrar usuario: ${response.code()}")
   }
 
-  // Actualizar usuario
+  // Actualizar perfil de usuario (parcial si no cambia password, completo si cambia password)
   suspend fun updateUsuario(id: Long, usuario: UsuarioUI): UsuarioUI {
-    val response = api.updateUsuario(id, usuario.toUpdateRequest())
+    val trimmedPassword = usuario.password.trim()
+    return if (trimmedPassword.isBlank()) {
+      updateUsuarioParcial(id, usuario)
+    } else {
+      updateUsuarioConPassword(id, usuario, trimmedPassword)
+    }
+  }
+
+  private suspend fun updateUsuarioParcial(id: Long, usuario: UsuarioUI): UsuarioUI {
+    val request = usuario.toActualizarParRequest()
+    val response = api.updatePerfilParcial(id, request)
     if (response.isSuccessful) {
       return response.body() ?: throw Exception("Error al actualizar usuario")
     }
     throw Exception("Error al actualizar usuario: ${response.code()}")
   }
 
-  suspend fun registrarEstadisticasPartida(
-    id: Long,
-    request: RegistroPartidaRequest
-  ): UsuarioUI {
-    println("🔵 DEBUG: Registrando estadísticas para usuario $id")
-    println("🔵 DEBUG: Request = $request")
-    val response = api.registrarEstadisticasPartida(id, request)
-    println("🔵 DEBUG: Response code = ${response.code()}")
-    println("🔵 DEBUG: Response body = ${response.body()}")
+  private suspend fun updateUsuarioConPassword(id: Long, usuario: UsuarioUI, password: String): UsuarioUI {
+    val request = usuario.toActualizarUsuarioRequest(password)
+    val response = api.updatePerfilCompleto(id, request)
     if (response.isSuccessful) {
-      return response.body() ?: throw Exception("No se recibieron estadísticas actualizadas")
-    } else {
-      val errorBody = response.errorBody()?.string()
-      println("🔵 DEBUG: Error body = $errorBody")
-      throw Exception("Error al registrar estadísticas: ${response.code()} - $errorBody")
+      return response.body() ?: throw Exception("Error al actualizar usuario")
     }
+    throw Exception("Error al actualizar usuario: ${response.code()}")
   }
 
  private fun calcularNivelUsuario(expTotal: Int): Int {
@@ -246,8 +259,22 @@ suspend fun actualizarEstadisticasUsuario(
         partidasGanadas = (usuarioActual.partidasGanadas + if (victoria) 1 else 0).coerceAtLeast(0),
         storyProgress = usuarioActual.storyProgress.coerceAtLeast(1)
     )
-    return updateUsuario(id, usuarioActualizado)
+    val request = usuarioActualizado.toActualizarStatsRequest()
+    val response = api.updateStats(id, request)
+    if (response.isSuccessful) {
+      return response.body() ?: throw Exception("Error al actualizar estadísticas")
+    }
+    throw Exception("Error al actualizar estadísticas: ${response.code()}")
 }
+
+  suspend fun updateUserStatsFields(id: Long, usuario: UsuarioUI): UsuarioUI {
+    val request = usuario.toActualizarStatsRequest()
+    val response = api.updateStats(id, request)
+    if (response.isSuccessful) {
+      return response.body() ?: throw Exception("Error al actualizar estadísticas")
+    }
+    throw Exception("Error al actualizar estadísticas: ${response.code()}")
+  }
 
     // 🔹 Eliminar usuario
     suspend fun deleteUsuario(id: Long): Boolean {

@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-	private const val BASE_URL = "http://10.190.215.205:8080/api/"
+	private const val BASE_URL = "http://192.168.0.243:8080/api/"
 
 	// Interceptor para ver las peticiones/respuestas en Logcat
 

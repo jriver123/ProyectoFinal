@@ -98,7 +98,7 @@ fun GetTranssStorySec(chapterId: Int): TranssStorySection {
                 StoryScene(
                     sceneId = 3,
                     opponentText = "Interesante respuesta. Demuéstramelo entonces.",
-                    playerText = "¿Cómo quieres proceder?",
+                    playerText = "¿...?",
                     options = listOf(
                         "Estoy listo para pelear.",
                         "Solo quiero entender qué está pasando.",
@@ -115,24 +115,23 @@ fun GetTranssStorySec(chapterId: Int): TranssStorySection {
             scenes = listOf(
                 StoryScene(
                     sceneId = 1,
-                    opponentText = "Has avanzado más de lo esperado. Eso me sorprende.",
-                    playerText = "...",
+                    opponentText = "Parece que has logrado derrotar a Jole, bien hecho.",
+                    playerText = "Fue como quitarle un dulce a un niño, un niño muy gordo y apestoso",
                     options = emptyList()
                 ),
                 StoryScene(
                     sceneId = 2,
-                    opponentText = "Este punto separa a los valientes de los débiles. ¿Dónde encajas tú?",
+                    opponentText = "Jajaja, tienes personalidad, eso me gusta. Pero la personalidad no es suficente por estos lados.",
                     playerText = "He llegado hasta aquí por una razón. No voy a detenerme ahora.",
                     options = emptyList()
                 ),
                 StoryScene(
                     sceneId = 3,
                     opponentText = "Palabras bonitas. Pero las palabras no ganan batallas.",
-                    playerText = "¿Qué es lo que realmente buscas aquí?",
+                    playerText = "Te enseñare algo bonito",
                     options = listOf(
                         "Acepto el desafío.",
-                        "Quiero saber quién está detrás de todo esto.",
-                        "Si quieres detenerme, inténtalo."
+                        "Es hora de caer bombon"
                     )
                 )
             )
@@ -145,14 +144,14 @@ fun GetTranssStorySec(chapterId: Int): TranssStorySection {
             scenes = listOf(
                 StoryScene(
                     sceneId = 1,
-                    opponentText = "Muchos llegaron antes que tú. Ninguno logró superar esta fase.",
-                    playerText = "...",
+                    opponentText = "Bien hecho muchacho, has derrato al gordo apestoso y a Nyra, pero debes recordar que no son nada mas que subordinados.",
+                    playerText = "Todos estan hecho de lo mismo, palabras sin sustancia, tu no eres diferente",
                     options = emptyList()
                 ),
                 StoryScene(
                     sceneId = 2,
                     opponentText = "Yo soy el guardián de esta arena. Mi trabajo es poner a prueba a quienes llegan.",
-                    playerText = "Entonces seré el primero. No vine solo a intentarlo.",
+                    playerText = "Hare de tu arena, muy buen cristal Drax",
                     options = emptyList()
                 ),
                 StoryScene(
@@ -162,7 +161,7 @@ fun GetTranssStorySec(chapterId: Int): TranssStorySection {
                     options = listOf(
                         "Comencemos ya.",
                         "No me intimidas.",
-                        "Primero quiero escuchar tu historia."
+                        "Es hora de pelear"
                     )
                 )
             )

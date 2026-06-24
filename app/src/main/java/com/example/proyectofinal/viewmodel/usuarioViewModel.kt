@@ -176,11 +176,22 @@ class UsuarioViewModel(
 	}
 
 	// 🔹 Actualizar usuario
-	fun actualizarUsuario(id: Long, usuario: UsuarioUI, onResult: (UsuarioUI?) -> Unit = {}) {
+	// Si passwordChanged=false, se forza update parcial (sin password).
+	fun actualizarUsuario(
+		id: Long,
+		usuario: UsuarioUI,
+		passwordChanged: Boolean = false,
+		onResult: (UsuarioUI?) -> Unit = {}
+	) {
 		viewModelScope.launch {
 			beginRequest()
 			runCatching<UsuarioUI> {
-				repository.updateUsuario(id, usuario)
+				val payload = if (passwordChanged) {
+					usuario
+				} else {
+					usuario.copy(password = "")
+				}
+				repository.updateUsuario(id, payload)
 			}.onSuccess { updated ->
 				_uiState.value = _uiState.value.copy(
 					isLoading = false,
@@ -251,8 +262,8 @@ class UsuarioViewModel(
 		viewModelScope.launch {
 			beginRequest()
 			runCatching {
-				// Llamada al repositorio para actualizar el progreso
-				val usuarioActualizado = repository.updateUsuario(
+				// Solo stats para progreso de historia
+				val usuarioActualizado = repository.updateUserStatsFields(
 					userId,
 					UsuarioUI(
 						id = userId,
@@ -276,6 +287,84 @@ class UsuarioViewModel(
 				)
 			}.onFailure { throwable ->
 				failRequest(throwable)
+			}
+		}
+	}
+
+	fun advanceStory(userId: Long, maxChapters: Int = 3) {
+		viewModelScope.launch {
+			beginRequest()
+			runCatching {
+				val usuarioActual = uiState.value.usuarioActivo ?: return@runCatching
+				val nextProgress = (usuarioActual.storyProgress + 1).coerceAtMost(maxChapters)
+				val usuarioActualizado = repository.updateUserStatsFields(
+					userId,
+					UsuarioUI(
+						id = userId,
+						username = usuarioActual.username,
+						email = usuarioActual.email,
+						description = usuarioActual.description,
+						nivel = usuarioActual.nivel,
+						monedas = usuarioActual.monedas,
+						partidasGanadas = usuarioActual.partidasGanadas,
+						partidasJugadas = usuarioActual.partidasJugadas,
+						storyProgress = nextProgress,
+						exp = usuarioActual.exp,
+						password = ""
+					)
+				)
+				_uiState.value = _uiState.value.copy(
+					isLoading = false,
+					usuarioActivo = usuarioActualizado,
+					message = null,
+					errorMessage = null
+				)
+			}.onFailure { throwable ->
+				failRequest(throwable)
+			}
+		}
+	}
+
+	fun comprarHeroe(heroId: Int, costoMonedas: Int, onResult: (Boolean) -> Unit = {}) {
+		val usuarioActual = _uiState.value.usuarioActivo
+		if (usuarioActual == null) {
+			_uiState.value = _uiState.value.copy(
+				isLoading = false,
+				message = null,
+				errorMessage = "No hay usuario activo"
+			)
+			onResult(false)
+			return
+		}
+
+		if (usuarioActual.monedas < costoMonedas) {
+			_uiState.value = _uiState.value.copy(
+				isLoading = false,
+				message = null,
+				errorMessage = "No tienes suficientes monedas"
+			)
+			onResult(false)
+			return
+		}
+
+		viewModelScope.launch {
+			beginRequest()
+			runCatching {
+				val usuarioActualizado = repository.updateUserStatsFields(
+					usuarioActual.id,
+					usuarioActual.copy(monedas = (usuarioActual.monedas - costoMonedas).coerceAtLeast(0))
+				)
+				_uiState.value = _uiState.value.copy(
+					isLoading = false,
+					usuarioActivo = usuarioActualizado,
+					message = "Heroe desbloqueado correctamente (#$heroId)",
+					errorMessage = null
+				)
+			}.onSuccess {
+				onResult(true)
+			}.onFailure { throwable ->
+				failRequest(throwable)
+				onResult(false)
 			}
 		}
 	}

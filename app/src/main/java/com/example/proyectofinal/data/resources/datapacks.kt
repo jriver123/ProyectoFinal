@@ -62,6 +62,7 @@ data class AttackMove(
     val accuracy: Double,
     val type: String,
     val description: String,
+    val targetCount: Int = 1,
     val healAmount: Int = 0,
     val shieldPercent: Double = 0.0
 )

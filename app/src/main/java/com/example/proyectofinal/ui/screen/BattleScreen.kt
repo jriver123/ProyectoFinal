@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -55,15 +56,19 @@ fun BattleScreen(
     isResolvingTurn: Boolean,
     requiresSkillSelection: Boolean,
     pendingSkillChoices: List<AttackMove>,
+    playerWon: Boolean,
+    isLastChapter: Boolean,
     soundCue: BattleSoundCue?,
     onSoundConsumed: () -> Unit,
-    onAttack: (AttackMove, Int) -> Unit,
+    onAttack: (AttackMove, List<Int>) -> Unit,
     onSelectSkill: (Int) -> Unit,
+    onContinueStory: () -> Unit,
     onExit: () -> Unit,
     onRetry: () -> Unit
 ) {
     val playerAttacks = remember(playerAttackIds) { getAttacksByIds(*playerAttackIds.toIntArray()) }
-    var selectedEnemyId by remember { mutableStateOf<Int?>(null) }
+    val selectedEnemyIds = remember { mutableStateListOf<Int>() }
+    var selectedAttack by remember { mutableStateOf<AttackMove?>(null) }
     val playSoundCue = rememberAttackSoundPlayer()
     val aliveEnemies = enemigos.filter { (enemyHpMap[it.id] ?: 0) > 0 }
     val aliveEnemyIds = aliveEnemies.map { it.id }.toSet()
@@ -80,9 +85,14 @@ fun BattleScreen(
         onSoundConsumed()
     }
 
-    LaunchedEffect(aliveEnemyIds, selectedEnemyId) {
-        if (selectedEnemyId != null && selectedEnemyId !in aliveEnemyIds) {
-            selectedEnemyId = null
+    LaunchedEffect(aliveEnemyIds) {
+        selectedEnemyIds.removeAll { it !in aliveEnemyIds }
+    }
+
+    LaunchedEffect(isPlayerTurn, battleFinished, requiresSkillSelection) {
+        if (!isPlayerTurn || battleFinished || requiresSkillSelection) {
+            selectedAttack = null
+            selectedEnemyIds.clear()
         }
     }
 
@@ -155,11 +165,33 @@ fun BattleScreen(
                             Box(
                                 modifier = slotModifier
                                     .border(
-                                        width = if (selectedEnemyId == enemy.id) 3.dp else 1.dp,
-                                        color = if (selectedEnemyId == enemy.id) Color(0xFF3A0CA3) else Color.LightGray,
+                                        width = if (enemy.id in selectedEnemyIds) 3.dp else 1.dp,
+                                        color = if (enemy.id in selectedEnemyIds) Color(0xFF3A0CA3) else Color.LightGray,
                                         shape = RoundedCornerShape(18.dp)
                                     )
-                                    .clickable(enabled = !isResolvingTurn) { selectedEnemyId = enemy.id }
+                                    .clickable(enabled = !isResolvingTurn) {
+                                        val attack = selectedAttack ?: return@clickable
+                                        if (!attack.necesitaObjetivo()) return@clickable
+                                        val maxTargets = attack.maxTargets()
+
+                                        if (enemy.id in selectedEnemyIds) {
+                                            selectedEnemyIds.remove(enemy.id)
+                                        } else if (selectedEnemyIds.size < maxTargets) {
+                                            selectedEnemyIds.add(enemy.id)
+                                        }
+
+                                        val resolved = resolveAttackTargetIds(
+                                            attack = attack,
+                                            selectedEnemyIds = selectedEnemyIds,
+                                            aliveEnemyIds = aliveEnemyIds
+                                        ) ?: return@clickable
+
+                                        if (resolved.size >= maxTargets) {
+                                            onAttack(attack, resolved)
+                                            selectedAttack = null
+                                            selectedEnemyIds.clear()
+                                        }
+                                    }
                             ) {
                                 FighterCardEnemy(
                                     title = enemy.name,
@@ -209,29 +241,59 @@ fun BattleScreen(
                 AttackCommandBar(
                     attacks = playerAttacks,
                     canUseAttacks = !isResolvingTurn,
-                    selectedEnemyName = aliveEnemies.firstOrNull { it.id == selectedEnemyId }?.name,
+                    selectedAttack = selectedAttack,
+                    selectedTargetsCount = selectedEnemyIds.size,
                     onAttackClick = { attack ->
-                        val targetId = if (attack.necesitaObjetivo()) {
-                            selectedEnemyId ?: return@AttackCommandBar
-                        } else {
-                            selectedEnemyId ?: -1
-                        }
+                        selectedAttack = attack
+                        selectedEnemyIds.clear()
 
-                        if (attack.necesitaObjetivo() && targetId !in aliveEnemyIds) {
+                        if (!attack.necesitaObjetivo()) {
+                            onAttack(attack, emptyList())
+                            selectedAttack = null
                             return@AttackCommandBar
                         }
-
-                        onAttack(attack, targetId)
                     }
                 )
             }
         } else if (battleFinished && !requiresSkillSelection) {
             item {
-                Button(onClick = onRetry, modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp)) { Text("Intentar otra vez") }
-                Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = onExit, modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp)) { Text("Volver a partidas") }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (playerWon) {
+                        if (isLastChapter) {
+                            Button(
+                                onClick = onExit,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(18.dp)
+                            ) {
+                                Text("🏠  Volver al menú principal")
+                            }
+                        } else {
+                            Button(
+                                onClick = onContinueStory,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(18.dp)
+                            ) {
+                                Text("▶  Continuar historia")
+                            }
+                        }
+                    }
+                    OutlinedButton(
+                        onClick = onRetry,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp)
+                    ) {
+                        Text(if (playerWon) "Volver a jugar" else "Intentar otra vez")
+                    }
+                    if (!isLastChapter || !playerWon) {
+                        OutlinedButton(
+                            onClick = onExit,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(18.dp)
+                        ) {
+                            Text("Volver a partidas")
+                        }
+                    }
+                }
             }
         }
     }

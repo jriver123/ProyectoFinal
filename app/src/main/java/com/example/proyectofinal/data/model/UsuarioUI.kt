@@ -42,10 +42,20 @@ data class UsuarioRequest(
 )
 
 // ✅ Para actualizaciones: NO incluir password para evitar corrupción en servidor
-data class UsuarioUpdateRequest(
+data class ActualizarParRequest(
+    val username: String,
+    val email: String,
+    val description: String? = null
+)
+
+data class ActualizarUsuarioRequest(
     val username: String,
     val email: String,
     val description: String? = null,
+    val password: String
+)
+
+data class ActualizarStatsRequest(
     @SerializedName("level")
     val nivel: Int = 0,
     @SerializedName("coins")
@@ -55,9 +65,7 @@ data class UsuarioUpdateRequest(
     @SerializedName("played_matches")
     val partidasJugadas: Int = 0,
     @SerializedName(value = "storyProgress", alternate = ["story_progress"])
-    val storyProgress: Int = 0,
-    @SerializedName("exp")
-    val exp: Int = 0
+    val storyProgress: Int = 0
 )
 
 data class RegistroPartidaRequest(

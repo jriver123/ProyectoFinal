@@ -17,6 +17,7 @@ import com.example.proyectofinal.data.resources.Hero
 import com.example.proyectofinal.data.resources.getAttacksByIds
 import com.example.proyectofinal.data.resources.getUnlockableAttacksForHero
 import com.example.proyectofinal.data.resources.giveXP
+import com.example.proyectofinal.data.resources.maxTargets
 import com.example.proyectofinal.ui.screen.BattleSoundCue
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -89,7 +90,7 @@ class BattleViewModel(
         playerAttacks = player.attacks.toList()
     }
 
-    fun atacar(player: Hero, enemigos: List<Enemy>, targetId: Int, ataque: AttackMove) {
+    fun atacar(player: Hero, enemigos: List<Enemy>, targetIds: List<Int>, ataque: AttackMove) {
         val currentState = engineState ?: return
 
         if (isResolvingTurn || !currentState.isPlayerTurn || currentState.battleFinished || requiresSkillSelection) {
@@ -97,8 +98,17 @@ class BattleViewModel(
         }
 
         if (ataque.necesitaObjetivo()) {
-            if ((currentState.enemyHpMap[targetId] ?: 0) <= 0) {
-                battleMessage = "Selecciona un enemigo vivo."
+            val requiredTargets = ataque.maxTargets()
+            val validTargets = targetIds
+                .distinct()
+                .filter { (currentState.enemyHpMap[it] ?: 0) > 0 }
+
+            if (validTargets.size < requiredTargets) {
+                battleMessage = if (requiredTargets == 1) {
+                    "Selecciona un enemigo vivo."
+                } else {
+                    "Selecciona $requiredTargets enemigos vivos."
+                }
                 return
             }
         }
@@ -108,7 +118,7 @@ class BattleViewModel(
             isPlayerTurn = false
 
             try {
-                executePlayerTurn(player, enemigos, targetId, ataque)
+                executePlayerTurn(player, enemigos, targetIds, ataque)
             } finally {
                 isResolvingTurn = false
             }
@@ -118,7 +128,7 @@ class BattleViewModel(
     private suspend fun executePlayerTurn(
         player: Hero,
         enemigos: List<Enemy>,
-        targetId: Int,
+        targetIds: List<Int>,
         ataque: AttackMove
     ) {
         val currentState = engineState ?: return
@@ -165,36 +175,61 @@ class BattleViewModel(
             return
         }
 
-        val enemy = enemigos.firstOrNull { it.id == targetId } ?: return
-
-        val (danio, mensaje) = combatManager.realizarAtaqueJugador(
-            ataque,
-            atacante = player,
-            defensor = enemy
-        )
-
-        if (danio == 0) {
-            emitMissSound(ataque.id)
+        val targetEnemies = if (ataque.necesitaObjetivo()) {
+            val requiredTargets = ataque.maxTargets()
+            val validIds = targetIds
+                .distinct()
+                .filter { (currentState.enemyHpMap[it] ?: 0) > 0 }
+                .take(requiredTargets)
+            enemigos.filter { it.id in validIds }
         } else {
-            emitAttackSound(ataque.id)
+            emptyList()
         }
+
+        if (ataque.necesitaObjetivo() && targetEnemies.isEmpty()) return
+
+        var stateInTurn = currentState
+        val defeatedEnemies = mutableListOf<Enemy>()
+        var anyHit = false
+
+        for (enemy in targetEnemies) {
+            val (danio, mensaje) = combatManager.realizarAtaqueJugador(
+                ataque,
+                atacante = player,
+                defensor = enemy
+            )
+
+            if (danio > 0) anyHit = true
+
+            val playerOutcome = battleEngine.applyPlayerAttack(
+                current = stateInTurn,
+                enemy = enemy,
+                damage = danio,
+                actionMessage = mensaje
+            )
+
+            stateInTurn = playerOutcome.state
+            if (playerOutcome.defeatedEnemyId == enemy.id) {
+                defeatedEnemies.add(enemy)
+            }
+            if (playerOutcome.allEnemiesDefeated || stateInTurn.battleFinished) {
+                break
+            }
+        }
+
+        if (anyHit) emitAttackSound(ataque.id) else emitMissSound(ataque.id)
 
         delay(BattleTurnTimings.SoundLeadMs)
 
-        val playerOutcome = battleEngine.applyPlayerAttack(
-            current = currentState,
-            enemy = enemy,
-            damage = danio,
-            actionMessage = mensaje
-        )
-
-        applyState(playerOutcome.state)
+        applyState(stateInTurn)
         delay(BattleTurnTimings.PostImpactMs)
 
-        if (playerOutcome.defeatedEnemyId != null) {
+        if (defeatedEnemies.isNotEmpty()) {
             val previousLevel = player.level
 
-            giveXP(player, enemy.rewardXp)
+            defeatedEnemies.forEach { defeatedEnemy ->
+                giveXP(player, defeatedEnemy.rewardXp)
+            }
             syncPlayerStats(player)
 
             if (player.level > previousLevel) {
@@ -207,7 +242,7 @@ class BattleViewModel(
             }
         }
 
-        if (playerOutcome.allEnemiesDefeated || playerOutcome.state.battleFinished) {
+        if (stateInTurn.battleFinished) {
             playerWon = true
             battleResultResolved = true
             return

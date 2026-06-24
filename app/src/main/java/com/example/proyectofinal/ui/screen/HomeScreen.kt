@@ -18,8 +18,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.proyectofinal.data.model.UsuarioUI
@@ -36,6 +42,9 @@ import com.example.proyectofinal.data.resources.t
 import com.example.proyectofinal.ui.components.StatCard
 import com.example.proyectofinal.ui.components.StoryProgressCard
 import com.example.proyectofinal.ui.components.rememberImageBitmap
+import kotlinx.coroutines.launch
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.rememberCoroutineScope
 
 
 @Composable
@@ -45,18 +54,117 @@ fun HomeScreen(
     profileImageUri: String?,
     onGoToStore: () -> Unit,
     onGoToProfile: () -> Unit,
-    onGoToStory: () -> Unit
+    onGoToStory: () -> Unit,
+    onGoToCompendium: () -> Unit,
+    onGoToSkills: () -> Unit
 ) {
     val imageBitmap = rememberImageBitmap(profileImageUri)
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(18.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                drawerContainerColor = Color(0xFFF4F2FF),
+                drawerContentColor = Color(0xFF34344A)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF3A0CA3))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "Menu principal",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Accede rapido a las secciones del juego",
+                                color = Color.White.copy(alpha = 0.85f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                    NavigationDrawerItem(
+                        label = {
+                            Text(
+                                text = "Compendio",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        },
+                        badge = { Text("📚") },
+                        selected = false,
+                        colors = NavigationDrawerItemDefaults.colors(
+                            unselectedContainerColor = Color(0xFFEDE7FF),
+                            selectedContainerColor = Color(0xFFDBF4F0),
+                            unselectedTextColor = Color(0xFF3A0CA3),
+                            selectedTextColor = Color(0xFF0BA896)
+                        ),
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            onGoToCompendium()
+                        }
+                    )
+                    NavigationDrawerItem(
+                        label = {
+                            Text(
+                                text = "Habilidades",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        },
+                        badge = { Text("✨") },
+                        selected = false,
+                        colors = NavigationDrawerItemDefaults.colors(
+                            unselectedContainerColor = Color(0xFFEAF4FF),
+                            selectedContainerColor = Color(0xFFDDF3FF),
+                            unselectedTextColor = Color(0xFF22577A),
+                            selectedTextColor = Color(0xFF22577A)
+                        ),
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            onGoToSkills()
+                        }
+                    )
+                }
+            }
+        }
     ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         item {
             Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start
+            ) {
+                OutlinedButton(
+                    onClick = { scope.launch { drawerState.open() } },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color(0xFFEDE7FF),
+                        contentColor = Color(0xFF3A0CA3)
+                    )
+                ) {
+                    Text("☰  Menu", fontWeight = FontWeight.SemiBold)
+                }
+            }
             Text(
                 text = "Battle.io",
                 style = MaterialTheme.typography.headlineMedium,
@@ -185,5 +293,6 @@ fun HomeScreen(
                 }
             }
         }
+    }
     }
 }

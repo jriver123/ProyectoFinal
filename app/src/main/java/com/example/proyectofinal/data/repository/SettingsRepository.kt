@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.proyectofinal.data.resources.AppDefaults
 import com.example.proyectofinal.data.resources.normalizeLanguage
@@ -23,7 +24,8 @@ data class SettingsPreferences(
     val selectedLanguage: String = AppDefaults.DefaultSelectedLanguage,
     val musicVolume: Float = AppDefaults.DefaultMusicVolume,
     val soundVolume: Float = AppDefaults.DefaultSoundVolume,
-    val selectedPackId: Int? = null
+    val selectedPackId: Int? = null,
+    val unlockedHeroIds: Set<Int> = AppDefaults.DefaultUnlockedHeroIds
 )
 
 class SettingsRepository(private val context: Context) {
@@ -34,10 +36,15 @@ class SettingsRepository(private val context: Context) {
         val musicVolume = floatPreferencesKey(AppDefaults.KeyMusicVolume)
         val soundVolume = floatPreferencesKey(AppDefaults.KeySoundVolume)
         val selectedPackId = intPreferencesKey(AppDefaults.KeySelectedPackId)
+        val unlockedHeroIds = stringSetPreferencesKey(AppDefaults.KeyUnlockedHeroIds)
     }
 
     val settingsFlow: Flow<SettingsPreferences> = context.appDataStore.data.map { prefs ->
         val storedPackId = prefs[Keys.selectedPackId]
+        val unlockedHeroes = prefs[Keys.unlockedHeroIds]
+            ?.mapNotNull { it.toIntOrNull() }
+            ?.toSet()
+            .orEmpty() + AppDefaults.DefaultUnlockedHeroIds
         SettingsPreferences(
             graphicsQuality = normalizeQuality(prefs[Keys.graphicsQuality]),
             selectedLanguage = normalizeLanguage(prefs[Keys.selectedLanguage]),
@@ -49,7 +56,8 @@ class SettingsRepository(private val context: Context) {
                 null
             } else {
                 storedPackId
-            }
+            },
+            unlockedHeroIds = unlockedHeroes
         )
     }
 
@@ -72,6 +80,18 @@ class SettingsRepository(private val context: Context) {
     suspend fun setSelectedPackId(value: Int?) {
         context.appDataStore.edit {
             it[Keys.selectedPackId] = value ?: AppDefaults.DefaultSelectedPackId
+        }
+    }
+
+    suspend fun unlockHero(heroId: Int) {
+        context.appDataStore.edit { prefs ->
+            val current = prefs[Keys.unlockedHeroIds]
+                ?.mapNotNull { it.toIntOrNull() }
+                ?.toMutableSet()
+                ?: AppDefaults.DefaultUnlockedHeroIds.toMutableSet()
+            current.add(AppDefaults.DefaultUnlockedHeroIds.first())
+            current.add(heroId)
+            prefs[Keys.unlockedHeroIds] = current.map { it.toString() }.toSet()
         }
     }
 }

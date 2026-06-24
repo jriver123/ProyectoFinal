@@ -207,24 +207,6 @@ fun TranssStoryScreen(
     }
 }
 
-@Composable
-fun TransssStoryScreen(
-    player: Hero,
-    section: TranssStorySection,
-    onOptionSelected: (optionIndex: Int, sceneId: Int) -> Unit,
-    onContinue: () -> Unit,
-    onBack: () -> Unit
-) {
-    // Alias para mantener compatibilidad con el nombre usado en navegación.
-    TranssStoryScreen(
-        player = player,
-        section = section,
-        onOptionSelected = onOptionSelected,
-        onContinue = onContinue,
-        onBack = onBack
-    )
-}
-
 // ──────────────────────────────────────────────────
 //  Fila de diálogo del contrincante (parte superior)
 // ──────────────────────────────────────────────────
@@ -331,13 +313,24 @@ private fun CharacterPortrait(
             .size(100.dp)
             .border(3.dp, borderColor, RoundedCornerShape(18.dp))
             .clip(RoundedCornerShape(18.dp))
+            .background(Color(0xFF1A1A2E)),
+        contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(id = imageResId),
-            contentDescription = "Retrato de $name",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
+        if (imageResId != 0) {
+            Image(
+                painter = painterResource(id = imageResId),
+                contentDescription = "Retrato de $name",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Text(
+                text = name.take(2).uppercase(),
+                color = borderColor,
+                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp
+            )
+        }
     }
 }
 

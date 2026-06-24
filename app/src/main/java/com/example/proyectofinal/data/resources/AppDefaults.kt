@@ -23,11 +23,5 @@ object AppDefaults {
         GamePack(3, "pack_legendary", 30, 3800, "bonus_legendary")
     )
 
-    val DemoMatches = listOf(
-        MatchHistory(1, "match_quick", "result_win", "+120 XP"),
-        MatchHistory(2, "match_survival", "result_loss", "+40 XP"),
-        MatchHistory(3, "match_competitive", "result_win", "+180 XP"),
-        MatchHistory(4, "match_weekly", "result_win", "+250 XP")
-    )
 }
 

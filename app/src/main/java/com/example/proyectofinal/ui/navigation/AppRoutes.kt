@@ -13,13 +13,17 @@ object AppRoutes {
     const val Skills = "skills"
     const val TranssStory = "transs_story"
     const val CharacterSelect = "character_select"
+    const val QuickCharacterSelect = "quick_character_select"
     const val SkillDetailBase = "skill_detail"
     const val SkillDetailWithArg = "$SkillDetailBase/{attackId}"
 
     const val BattleBase = "battle"
     const val BattleWithArg = "$BattleBase/{characterId}"
+    const val QuickBattleBase = "quick_battle"
+    const val QuickBattleWithArg = "$QuickBattleBase/{characterId}"
 
     fun battle(characterId: Int): String = "$BattleBase/$characterId"
+    fun quickBattle(characterId: Int): String = "$QuickBattleBase/$characterId"
     fun skillDetail(attackId: Int): String = "$SkillDetailBase/$attackId"
 }
 

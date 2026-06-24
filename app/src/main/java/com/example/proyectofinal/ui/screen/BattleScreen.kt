@@ -1,5 +1,6 @@
 package com.example.proyectofinal.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.animateContentSize
@@ -20,9 +21,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -58,6 +61,7 @@ fun BattleScreen(
     pendingSkillChoices: List<AttackMove>,
     playerWon: Boolean,
     isLastChapter: Boolean,
+    showContinueStoryAction: Boolean = true,
     soundCue: BattleSoundCue?,
     onSoundConsumed: () -> Unit,
     onAttack: (AttackMove, List<Int>) -> Unit,
@@ -69,9 +73,14 @@ fun BattleScreen(
     val playerAttacks = remember(playerAttackIds) { getAttacksByIds(*playerAttackIds.toIntArray()) }
     val selectedEnemyIds = remember { mutableStateListOf<Int>() }
     var selectedAttack by remember { mutableStateOf<AttackMove?>(null) }
+    var showExitConfirmation by remember { mutableStateOf(false) }
     val playSoundCue = rememberAttackSoundPlayer()
     val aliveEnemies = enemigos.filter { (enemyHpMap[it.id] ?: 0) > 0 }
     val aliveEnemyIds = aliveEnemies.map { it.id }.toSet()
+
+    BackHandler {
+        showExitConfirmation = true
+    }
 
     val animatedPlayerHp by animateIntAsState(
         targetValue = playerHp,
@@ -94,6 +103,27 @@ fun BattleScreen(
             selectedAttack = null
             selectedEnemyIds.clear()
         }
+    }
+
+    if (showExitConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirmation = false },
+            title = { Text("Salir del combate") },
+            text = { Text("Si sales ahora, se perderá el progreso de este combate. ¿Seguro que deseas salir?") },
+            confirmButton = {
+                Button(onClick = {
+                    showExitConfirmation = false
+                    onExit()
+                }) {
+                    Text("Sí, salir")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitConfirmation = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 
     LazyColumn(
@@ -259,7 +289,7 @@ fun BattleScreen(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (playerWon) {
-                        if (isLastChapter) {
+                        if (showContinueStoryAction && isLastChapter) {
                             Button(
                                 onClick = onExit,
                                 modifier = Modifier.fillMaxWidth(),
@@ -267,7 +297,7 @@ fun BattleScreen(
                             ) {
                                 Text("🏠  Volver al menú principal")
                             }
-                        } else {
+                        } else if (showContinueStoryAction) {
                             Button(
                                 onClick = onContinueStory,
                                 modifier = Modifier.fillMaxWidth(),
@@ -284,7 +314,7 @@ fun BattleScreen(
                     ) {
                         Text(if (playerWon) "Volver a jugar" else "Intentar otra vez")
                     }
-                    if (!isLastChapter || !playerWon) {
+                    if (!showContinueStoryAction || !isLastChapter || !playerWon) {
                         OutlinedButton(
                             onClick = onExit,
                             modifier = Modifier.fillMaxWidth(),

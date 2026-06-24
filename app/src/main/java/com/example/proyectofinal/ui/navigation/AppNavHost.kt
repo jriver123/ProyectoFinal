@@ -37,6 +37,8 @@ import com.example.proyectofinal.data.resources.AppDefaults
 import com.example.proyectofinal.data.resources.BackgroundMusicPlayer
 import com.example.proyectofinal.data.resources.GetTranssStorySec
 import com.example.proyectofinal.data.resources.ScreenBgMusic
+import com.example.proyectofinal.data.resources.createQuickBattleChapter
+import com.example.proyectofinal.data.resources.generateRandomEnemySquad
 import com.example.proyectofinal.data.resources.getHeroUnlockOffers
 import com.example.proyectofinal.data.resources.getPlayableCharacters
 import com.example.proyectofinal.data.resources.getStoryChapters
@@ -107,6 +109,7 @@ fun AppNavHost() {
     val soundVolume = settings.soundVolume
     val selectedPackId = settings.selectedPackId
     val unlockedHeroIds = settings.unlockedHeroIds
+    var quickBattleEnemies by remember { mutableStateOf(emptyList<com.example.proyectofinal.data.resources.Enemy>()) }
 
     val usuarioActivo = usuarioUIState.usuarioActivo
 
@@ -143,6 +146,9 @@ fun AppNavHost() {
     LaunchedEffect(currentRoute) {
         when (currentRoute) {
             AppRoutes.BattleWithArg -> {
+                // La música de batalla/derrota se controla dentro del composable de batalla.
+            }
+            AppRoutes.QuickBattleWithArg -> {
                 // La música de batalla/derrota se controla dentro del composable de batalla.
             }
             AppRoutes.Home -> {
@@ -357,10 +363,11 @@ fun AppNavHost() {
                         MatchesScreen(
                             usuario = matchesUsuario,
                             language = selectedLanguage,
-                            matches = AppDefaults.DemoMatches,
+                            matches = emptyList(),
                             navController = navController,
                             onPlayMatch = {
-                                println("Simulacion de partida iniciada")
+                                quickBattleEnemies = emptyList()
+                                navController.navigate(AppRoutes.QuickCharacterSelect)
                             },
                             onGoToStory = {
                                 navController.navigate(AppRoutes.Story)
@@ -570,6 +577,26 @@ fun AppNavHost() {
                         onBack = { navController.popBackStack() }
                     )
                 }
+                composable(AppRoutes.QuickCharacterSelect) {
+                    val characters = heroRoster.values
+                        .filter { it.id in unlockedHeroIds }
+                        .ifEmpty { listOf(getPlayableCharacters().first()) }
+
+                    var selectedCharacterId by rememberSaveable { mutableStateOf(-1) }
+
+                    CharacterSelectionScreen(
+                        characters = characters,
+                        selectedCharacterId = selectedCharacterId,
+                        onSelectCharacter = { id -> selectedCharacterId = id },
+                        onStartBattle = {
+                            if (selectedCharacterId != -1) {
+                                quickBattleEnemies = generateRandomEnemySquad()
+                                navController.navigate(AppRoutes.quickBattle(selectedCharacterId))
+                            }
+                        },
+                        onBack = { navController.popBackStack() }
+                    )
+                }
                 composable(AppRoutes.BattleWithArg) { backStackEntry ->
                     val characterId = backStackEntry.arguments?.getString("characterId")?.toIntOrNull()
                     val characters = heroRoster.values
@@ -659,6 +686,7 @@ fun AppNavHost() {
                         battleFinished = battleViewModel.battleFinished,
                         playerWon = battleViewModel.playerWon,
                         isLastChapter = isLastChapter,
+                        showContinueStoryAction = true,
                         requiresSkillSelection = battleViewModel.requiresSkillSelection,
                         pendingSkillChoices = battleViewModel.pendingSkillChoices,
                         soundCue = battleViewModel.soundCue,
@@ -681,6 +709,115 @@ fun AppNavHost() {
                         onExit = {
                             BackgroundMusicPlayer.stopMusic()
                             navController.navigate(AppRoutes.Matches)
+                        },
+                        onRetry = { battleViewModel.reiniciar(player, enemies) }
+                    )
+                }
+                composable(AppRoutes.QuickBattleWithArg) { backStackEntry ->
+                    val characterId = backStackEntry.arguments?.getString("characterId")?.toIntOrNull()
+                    val characters = heroRoster.values
+                        .filter { it.id in unlockedHeroIds }
+                        .ifEmpty { listOf(getPlayableCharacters().first()) }
+                    val player = characters.firstOrNull { it.id == characterId } ?: characters.first()
+
+                    val enemies = if (quickBattleEnemies.isNotEmpty()) {
+                        quickBattleEnemies
+                    } else {
+                        generateRandomEnemySquad().also { generated ->
+                            quickBattleEnemies = generated
+                        }
+                    }
+                    val chapter = createQuickBattleChapter(enemies)
+
+                    val battleViewModel: BattleViewModel = viewModel()
+
+                    LaunchedEffect(Unit) {
+                        battleViewModel.iniciarCombate(player, enemies)
+                    }
+
+                    LaunchedEffect(
+                        battleViewModel.battleFinished,
+                        battleViewModel.battleResultResolved,
+                        battleViewModel.userRewardRegistered
+                    ) {
+                        if (
+                            battleViewModel.battleFinished &&
+                            battleViewModel.battleResultResolved &&
+                            !battleViewModel.userRewardRegistered
+                        ) {
+                            val userCoins = if (battleViewModel.playerWon) {
+                                (chapter.rewardCoins / 4).coerceAtLeast(15)
+                            } else {
+                                (chapter.rewardCoins / 10).coerceAtLeast(5)
+                            }
+                            val userXp = if (battleViewModel.playerWon) {
+                                (chapter.rewardXp / 4).coerceAtLeast(10)
+                            } else {
+                                (chapter.rewardXp / 10).coerceAtLeast(4)
+                            }
+
+                            usuarioViewModel.registrarResultadoPartida(
+                                victoria = battleViewModel.playerWon,
+                                monedasGanadas = userCoins,
+                                xpGanada = userXp,
+                                onResult = { registrado ->
+                                    usuarioActivo?.id?.let { userId ->
+                                        scope.launch {
+                                            repository.saveHeroProgress(userId, player)
+                                        }
+                                    }
+                                    if (registrado) {
+                                        battleViewModel.registrarRecompensaUsuario()
+                                    }
+                                }
+                            )
+                        }
+                    }
+
+                    val battleMusicKey = when {
+                        battleViewModel.battleFinished && battleViewModel.playerWon -> ScreenBgMusic.Victory
+                        battleViewModel.battleFinished && !battleViewModel.playerWon -> ScreenBgMusic.Defeat
+                        else -> ScreenBgMusic.Battle
+                    }
+
+                    LaunchedEffect(battleMusicKey, musicVolume) {
+                        BackgroundMusicPlayer.playScreenMusic(context, battleMusicKey)
+                        BackgroundMusicPlayer.setVolume((musicVolume / 100f) * 0.7f)
+                    }
+
+                    BattleScreen(
+                        player = player,
+                        enemigos = enemies,
+                        chapter = chapter,
+                        isPlayerTurn = battleViewModel.isPlayerTurn,
+                        isResolvingTurn = battleViewModel.isResolvingTurn,
+                        playerHp = battleViewModel.playerHp,
+                        playerXP = battleViewModel.playerXP,
+                        playerNextLevelXP = battleViewModel.playerNextLevelXP,
+                        playerLevel = battleViewModel.playerLevel,
+                        playerAttackIds = battleViewModel.playerAttacks,
+                        enemyHpMap = battleViewModel.enemyHpMap,
+                        battleMessage = battleViewModel.battleMessage,
+                        battleFinished = battleViewModel.battleFinished,
+                        playerWon = battleViewModel.playerWon,
+                        isLastChapter = true,
+                        showContinueStoryAction = false,
+                        requiresSkillSelection = battleViewModel.requiresSkillSelection,
+                        pendingSkillChoices = battleViewModel.pendingSkillChoices,
+                        soundCue = battleViewModel.soundCue,
+                        onSoundConsumed = { battleViewModel.consumeSoundCue() },
+                        onAttack = { attack, targetIds ->
+                            battleViewModel.atacar(player, enemies, targetIds, ataque = attack)
+                        },
+                        onSelectSkill = { attackId ->
+                            battleViewModel.seleccionarNuevaHabilidad(player, attackId)
+                        },
+                        onContinueStory = {},
+                        onExit = {
+                            BackgroundMusicPlayer.stopMusic()
+                            navController.navigate(AppRoutes.Matches) {
+                                popUpTo(AppRoutes.QuickCharacterSelect) { inclusive = true }
+                            }
                         },
                         onRetry = { battleViewModel.reiniciar(player, enemies) }
                     )

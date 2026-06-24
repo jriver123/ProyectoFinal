@@ -1,5 +1,6 @@
 package com.example.proyectofinal.data.remote
 
+import com.example.proyectofinal.data.preferences.ConfigManager
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -7,7 +8,6 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-	private const val BASE_URL = "http://192.168.0.243:8080/api/"
 
 	// Interceptor para ver las peticiones/respuestas en Logcat
 
@@ -20,9 +20,9 @@ object RetrofitClient {
 		.build()
 
 	// Retrofit configurado con Gson
-	private val retrofit: Retrofit by lazy {
+	val retrofit: Retrofit by lazy {
 		Retrofit.Builder()
-			.baseUrl(BASE_URL)
+			.baseUrl(ConfigManager.getBaseUrl())
 			.client(okHttpClient)
 			.addConverterFactory(GsonConverterFactory.create())
 			.build()

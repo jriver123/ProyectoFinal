@@ -11,11 +11,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -33,14 +36,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.proyectofinal.R
 import com.example.proyectofinal.data.model.UsuarioUI
 import com.example.proyectofinal.data.resources.t
+import com.example.proyectofinal.ui.navigation.AppRoutes
 import com.example.proyectofinal.viewmodel.UsuarioViewModel
 
 @Composable
@@ -48,7 +55,8 @@ fun LoginScreen(
     viewModel: UsuarioViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
     language: String = "es",
     onLoginSuccess: (UsuarioUI) -> Unit,
-    onRegisterClick: () -> Unit = {}
+    onRegisterClick: () -> Unit = {},
+    navController: NavController? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -269,6 +277,27 @@ fun LoginScreen(
                             )
                         }
                     }
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp, end = 12.dp),
+            horizontalArrangement = Arrangement.End
+        ) {
+            if (navController != null) {
+                IconButton(
+                    onClick = { navController.navigate(AppRoutes.ServerConfig) },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Configuración del servidor",
+                        tint = Color(0xFF5848E8),
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
             }
         }

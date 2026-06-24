@@ -3,6 +3,7 @@ package com.example.proyectofinal.ui.navigation
 object AppRoutes {
     const val Login = "login"
     const val Register = "register"
+    const val ServerConfig = "server_config"
     const val Home = "home"
     const val Matches = "matches"
     const val Store = "store"

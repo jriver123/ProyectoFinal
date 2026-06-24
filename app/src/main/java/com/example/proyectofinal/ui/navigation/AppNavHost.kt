@@ -52,6 +52,7 @@ import com.example.proyectofinal.ui.screen.LoginScreen
 import com.example.proyectofinal.ui.screen.MatchesScreen
 import com.example.proyectofinal.ui.screen.ProfileScreen
 import com.example.proyectofinal.ui.screen.RegisterScreen
+import com.example.proyectofinal.ui.screen.ServerConfigScreen
 import com.example.proyectofinal.ui.screen.SettingsScreen
 import com.example.proyectofinal.ui.screen.SkillDetailScreen
 import com.example.proyectofinal.ui.screen.SkillsScreen
@@ -288,6 +289,7 @@ fun AppNavHost() {
                 composable(AppRoutes.Login) {
                     LoginScreen(
                         viewModel = usuarioViewModel,
+                        navController = navController,
                         onLoginSuccess = { response ->
                             usuarioViewModel.cargarUsuarioDetalles(response.id)
                             navController.navigate(AppRoutes.Home) {
@@ -313,6 +315,9 @@ fun AppNavHost() {
                         },
                         onBackToLogin = { navController.popBackStack() }
                     )
+                }
+                composable(AppRoutes.ServerConfig) {
+                    ServerConfigScreen(navController = navController)
                 }
                 composable(AppRoutes.Home) {
                     val homeUiState by usuarioViewModel.uiState.collectAsState()

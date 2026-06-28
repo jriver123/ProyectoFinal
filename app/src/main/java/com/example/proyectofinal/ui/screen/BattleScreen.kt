@@ -295,7 +295,7 @@ fun BattleScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(18.dp)
                             ) {
-                                Text("🏠  Volver al menú principal")
+                                Text("  Volver al menú principal")
                             }
                         } else if (showContinueStoryAction) {
                             Button(

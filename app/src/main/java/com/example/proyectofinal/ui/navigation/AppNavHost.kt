@@ -78,7 +78,7 @@ fun AppNavHost() {
         .build()
     val settingsRepository = remember { SettingsRepository(context.applicationContext) }
     val repository = UsuarioRepository(
-        RetrofitClient.usuarioApi,
+        { RetrofitClient.usuarioApi },
         db.usuarioLoginDao(),
         db.heroProgressDao()
     )

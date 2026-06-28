@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import retrofit2.HttpException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.io.IOException
 
 data class UsuarioUiState(
@@ -30,7 +33,10 @@ class UsuarioViewModel(
 	private fun handleError(e: Throwable): String {
 		return when (e) {
 			is HttpException -> "Error HTTP ${e.code()}"
-			is IOException -> "Error de conexión"
+			is UnknownHostException -> "No se pudo resolver el host. Revisa IP/URL del servidor."
+			is ConnectException -> "No se pudo conectar al servidor. Revisa red, IP y puerto."
+			is SocketTimeoutException -> "Tiempo de espera agotado al conectar con la API."
+			is IOException -> "Error de conexión: ${e.localizedMessage ?: "sin detalle"}"
 			else -> "Error inesperado: ${e.localizedMessage}"
 		}
 	}

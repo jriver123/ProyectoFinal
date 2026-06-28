@@ -10,6 +10,17 @@ object ConfigManager {
 
     private lateinit var prefs: SharedPreferences
 
+    private fun normalizeBaseUrl(url: String): String {
+        val trimmed = url.trim()
+        if (trimmed.isBlank()) return DEFAULT_BASE_URL
+        val withScheme = when {
+            trimmed.startsWith("http://", ignoreCase = true) -> trimmed
+            trimmed.startsWith("https://", ignoreCase = true) -> trimmed
+            else -> "http://$trimmed"
+        }
+        return if (withScheme.endsWith("/")) withScheme else "$withScheme/"
+    }
+
     fun init(context: Context) {
         prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
     }
@@ -19,8 +30,7 @@ object ConfigManager {
     }
 
     fun setBaseUrl(url: String) {
-        // Asegurar que termina con /
-        val normalizedUrl = if (url.endsWith("/")) url else "$url/"
+        val normalizedUrl = normalizeBaseUrl(url)
         prefs.edit().putString(KEY_BASE_URL, normalizedUrl).apply()
     }
 

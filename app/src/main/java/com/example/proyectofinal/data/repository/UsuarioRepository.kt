@@ -9,10 +9,13 @@ import retrofit2.Response
 import com.example.proyectofinal.data.resources.calcularXpRequerida
 
 class UsuarioRepository(
-    private val api: UsuarioApi,
+    private val apiProvider: () -> UsuarioApi,
     private val usuarioLoginDao: UsuarioLoginDao,
     private val heroProgressDao: HeroProgressDao
 ) {
+
+  private val api: UsuarioApi
+    get() = apiProvider()
 
   private fun HeroProgressEntity.toHero(baseHero: Hero): Hero {
     val parsedAttacks = if (attacksCsv.isBlank()) {

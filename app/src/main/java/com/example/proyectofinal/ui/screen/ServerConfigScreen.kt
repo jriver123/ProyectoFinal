@@ -24,6 +24,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,10 +33,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.proyectofinal.data.preferences.ConfigManager
+import com.example.proyectofinal.data.remote.RetrofitClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun ServerConfigScreen(navController: NavController) {
     val baseUrlState = remember { mutableStateOf(ConfigManager.getBaseUrl()) }
+    val isTestingConnection = remember { mutableStateOf(false) }
+    val connectionMessage = remember { mutableStateOf<String?>(null) }
+    val connectionOk = remember { mutableStateOf<Boolean?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
     val bgColor = Color(0xFFF7F4FF)
     val cardColor = Color.White
@@ -137,6 +146,8 @@ fun ServerConfigScreen(navController: NavController) {
                     Button(
                         onClick = {
                             ConfigManager.setBaseUrl(baseUrlState.value)
+                            baseUrlState.value = ConfigManager.getBaseUrl()
+                            RetrofitClient.invalidate()
                         },
                         modifier = Modifier
                             .weight(1f)
@@ -154,6 +165,7 @@ fun ServerConfigScreen(navController: NavController) {
                         onClick = {
                             ConfigManager.resetBaseUrl()
                             baseUrlState.value = ConfigManager.getBaseUrl()
+                            RetrofitClient.invalidate()
                         },
                         modifier = Modifier
                             .weight(1f)
@@ -169,6 +181,57 @@ fun ServerConfigScreen(navController: NavController) {
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = {
+                        ConfigManager.setBaseUrl(baseUrlState.value)
+                        baseUrlState.value = ConfigManager.getBaseUrl()
+                        RetrofitClient.invalidate()
+                        isTestingConnection.value = true
+                        connectionMessage.value = null
+                        connectionOk.value = null
+
+                        coroutineScope.launch {
+                            val result = withContext(Dispatchers.IO) {
+                                RetrofitClient.probeServer(ConfigManager.getBaseUrl())
+                            }
+                            isTestingConnection.value = false
+                            if (result.reachable) {
+                                connectionOk.value = true
+                                connectionMessage.value = "Conexion exitosa (${result.detail}) en ${result.testedUrl}"
+                            } else {
+                                connectionOk.value = false
+                                connectionMessage.value = "No se pudo conectar: ${result.detail}"
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF2F6FED),
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        if (isTestingConnection.value) "Probando conexion..." else "Probar conexion"
+                    )
+                }
+
+                if (connectionMessage.value != null) {
+                    val statusColor = when (connectionOk.value) {
+                        true -> Color(0xFF1B8E3E)
+                        false -> Color(0xFFD93025)
+                        else -> Color(0xFF666666)
+                    }
+                    Text(
+                        text = connectionMessage.value ?: "",
+                        color = statusColor,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
 
                 Surface(
                     modifier = Modifier

@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.proyectofinal.data.model.UsuarioUI
 import com.example.proyectofinal.data.preferences.ConfigManager
+import com.example.proyectofinal.data.remote.RetrofitClient
 import com.example.proyectofinal.data.resources.t
 import com.example.proyectofinal.ui.components.OptionChip
 import com.example.proyectofinal.ui.components.SettingsCard
@@ -139,6 +140,8 @@ fun SettingsScreen(
                         Button(
                             onClick = {
                                 ConfigManager.setBaseUrl(baseUrlState.value)
+                                baseUrlState.value = ConfigManager.getBaseUrl()
+                                RetrofitClient.invalidate()
                             },
                             modifier = Modifier.weight(1f)
                         ) {
@@ -149,6 +152,7 @@ fun SettingsScreen(
                             onClick = {
                                 ConfigManager.resetBaseUrl()
                                 baseUrlState.value = ConfigManager.getBaseUrl()
+                                RetrofitClient.invalidate()
                             },
                             modifier = Modifier.weight(1f)
                         ) {
